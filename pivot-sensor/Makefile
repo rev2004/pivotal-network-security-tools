@@ -5,7 +5,7 @@
 # Compiler flags
 
 CC=gcc
-CFLAGS=-c -Wall -ansi
+CFLAGS=-c -Wall -ansi -DLINUX_BUILD -D_GNU_SOURCE
 
 # Linker flags
 
@@ -39,7 +39,7 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 .c.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -DLINUX_BUILD $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
 
 strip:
 	strip pivot-sensor
