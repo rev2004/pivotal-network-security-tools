@@ -1,28 +1,28 @@
 
 /*  Copyright 2014 Derek Chadwick
 
-    This file is part of the FineLine Computer Forensics Timeline Tools.
+    This file is part of the Pivotal Network Security Tools.
 
-    FineLine is free software: you can redistribute it and/or modify
+    Pivotal is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    FineLine is distributed in the hope that it will be useful,
+    Pivotal is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with FineLine.  If not, see <http://www.gnu.org/licenses/>.
+    along with Pivotal.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-   fllog.c
+   pvlog.c
 
-   Title : FineLine Computer Forensics Timeline Constructor
+   Title : Pivotal NST Logging.
    Author: Derek Chadwick
-   Date  : 22/12/2013
+   Date  : 06/07/2014
 
    Purpose: Logging, reporting and debug functions.
 
@@ -34,7 +34,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "fineline-ws.h"
+#include "pvcommon.h"
 
 static FILE *log_file;
 

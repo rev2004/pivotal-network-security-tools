@@ -182,31 +182,38 @@ int get_time_string(char *tstr, int slen)
 int validate_ipv4_address(char *ipv4_addr)
 {
 	/* TODO: a regex would be nice = m/\d+\.\d+\.\d+\.\d+/ */
+	/* struct sockaddr_in sa;
+   int result = inet_pton(AF_INET, ipv4_addr, &(sa.sin_addr));
+   */
+
 	return(0);
 }
 
 int validate_ipv6_address(char *ipv6_addr)
 {
 	/* TODO: definitely need a regex for this one */
+   /* struct sockaddr_in sa;
+   int result = inet_pton(AF_INET, ipv6_addr, &(sa.sin_addr));
+   */
 
 	return(0);
 }
 
 char *ltrim(char *s)
 {
-    while(isspace(*s)) s++;
-    return s;
+   while(isspace(*s)) s++;
+   return s;
 }
 
 char *rtrim(char *s)
 {
-    char* back = s + strlen(s);
-    while(isspace(*--back));
-    *(back+1) = '\0';
-    return s;
+   char* back = s + strlen(s);
+   while(isspace(*--back));
+   *(back+1) = '\0';
+   return s;
 }
 
 char *trim(char *s)
 {
-    return rtrim(ltrim(s));
+   return rtrim(ltrim(s));
 }
