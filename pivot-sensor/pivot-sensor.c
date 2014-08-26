@@ -34,14 +34,16 @@
 #include <string.h>
 
 #include "pvcommon.h"
+#include "pivot-sensor.h"
 
 static uint32_t sensor_id = 0;
 
 int main(int argc, char *argv[])
 {
-   char pv_out_file[PV_PATH_MAX];
+   char pv_out_file[PV_PATH_MAX_LENGTH];
    char server_ip_address[PV_IP_ADDR_MAX];
-   char filter_file[PV_PATH_MAX];
+   char filter_file[PV_PATH_MAX_LENGTH];
+   char capture_device[PV_PATH_MAX_LENGTH]
    int mode;
    int res = open_log_file(argv[0]);
 
@@ -52,26 +54,36 @@ int main(int argc, char *argv[])
    }
    print_log_entry("pivot-sensor.c main() <INFO> Starting Pivotal Sensor 1.0\n");
 
-   mode = parse_command_line_args(argc, argv, pv_out_file, server_ip_address, filter_file);
+   mode = parse_command_line_args(argc, argv, capture_device, pv_out_file, server_ip_address, filter_file);
    if (mode > 0)
    {
 
-      if (mode & PV_SNIFF_INPUT)
+      if (mode & PV_CAPTURE_INPUT)
       {
+         if (mode & PV_FILTER_ON)
+         {
+            parse_filter_file(filter_file, bpf_string);
+         }
+         else
+         {
+            strncpy(bpf_string, "ip", 2); /* Only do layer 3 and above */
+         }
+         start_capture(capture_device, bpf_string);
       }
       else if (mode & PV_UNIFIED2_INPUT)
       {
+         /* TODO: tail suricata logs */
       }
       else
       {
          print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options!\n");
-         show_help();
+         show_sensor_help();
       }
    }
    else
    {
       print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options!\n");
-      show_help();
+      show_sensor_help();
    }
 
    close_log_file();
@@ -82,10 +94,10 @@ int main(int argc, char *argv[])
 /*
    Function: parse_command_line_args
    Purpose : Validates command line arguments.
-   Input   : argc, argv, log file and db file handles.
-   Return  : mode of operation and database file handle if required.
+   Input   : argc, argv, capture interface, server ip and filter file strings.
+   Return  : returns -1 on error, mode of operation on success.
 */
-int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, char *in_file, char *server_ip_address, char *filter_file)
+int parse_command_line_args(int argc, char *argv[], char *capture_device, char *pv_event_filename, char *server_ip_address, char *filter_file)
 {
    int retval = 0;
    int input_file_specified = 0;
@@ -98,6 +110,7 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
    memset(in_file, 0, PV_PATH_MAX);
    memset(filter_file, 0, PV_PATH_MAX);
    strncpy(pv_event_filename, EVENT_FILE, strlen(EVENT_FILE)); /* the default event filename */
+   strncpy(capture_device, "NONE", 4);
 
    if (tlen > 0)
    {
@@ -119,7 +132,15 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
       int i;
       for (i = 1; i < argc; i++)
       {
-         if (strncmp(argv[i], "-w", 2) == 0)
+         if (strncmp(argv[i], "-c", 2) == 0)
+         {
+            retval = retval | PV_CAPTURE_INPUT; /* Capture packets on a network interface */
+         }
+         if (strncmp(argv[i], "-t", 2) == 0)
+         {
+            retval = retval | PV_UNIFIED2_INPUT; /* Tail Unified2 log files */
+         }
+         else if (strncmp(argv[i], "-w", 2) == 0)
          {
             retval = retval | PV_FILE_OUT; /* Create FineLine event file */
          }
@@ -133,7 +154,7 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
          }
          else if (strncmp(argv[i], "-o", 2) == 0)
          {
-            /* FineLine event file name to use for output of event records */
+            /* Optional FineLine event file name to use for output of event records */
             if ((i+1) < argc)
             {
                printf("parse_command_line_args() <INFO> FineLine event file: %s\n", argv[i+1]);
@@ -147,7 +168,17 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
          }
          else if (strncmp(argv[i], "-i", 2) == 0)
          {
-
+            /* Network interface for packet capture */
+            if ((i+1) < argc)
+            {
+               printf("parse_command_line_args() <INFO> Network interface: %s\n", argv[i+1]);
+               strncpy(capture_device, argv[i+1], strlen(argv[i+1]));
+            }
+            else
+            {
+               print_log_entry("parse_command_line_args() <ERROR> Missing network interface.\n");
+               return(-1);
+            }
          }
 		   else if (strncmp(argv[i], "-a", 2) == 0)
 		   {
@@ -190,4 +221,28 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
    return(retval);
 }
 
+/* help */
+int show_sensor_help()
+{
+   printf("\nPivotal NST Sensor 1.0\n\n");
+   printf("Command: pivotal-sensor <options>\n\n");
+   printf("Capture packets from an interface                 : -c\n");
+   printf("Tail a Unified2 event log                         : -t\n");
+   printf("Output to a fineline event file                   : -w\n");
+   printf("Send events to server                             : -s\n");
+   printf("Specify fineline output filename                  : -o FILENAME\n");
+   printf("Specify network interface                         : -i INTERFACE\n");
+   printf("Specify a server IP address                       : -a 192.168.1.10\n");
+   printf("Specify filter file                               : -f FILENAME\n");
+   printf("\n");
+   printf("Input and output files are optional. For sending events to the server\n");
+   printf("-a <IPaddress> is mandatory. Minimal command line is:\n\n");
+   printf("sudo pivotal-sensor -w -i wlan0\n\n");
+   printf("This will capture packets on the wlan0 interface and output events into\n");
+   printf("a default fineline event file: fineline-events-YYYYMMDD-HHMMSS.fle\n");
+   printf("An optional BPF filter list can be included, the default filter\n");
+   printf("file is pv-filter-list.txt\n");
+
+   return(0);
+}
 

@@ -47,9 +47,11 @@
 #define MAX_EVENT_DESC_SIZE 256
 #define MAX_EVENT_ID_SIZE 8
 
-#define PV_FILE_OUT     0x01
-#define PV_SERVER_OUT   0x02
-#define PV_FILTER_ON    0x04
+#define PV_FILE_OUT       0x01
+#define PV_SERVER_OUT     0x02
+#define PV_FILTER_ON      0x04
+#define PV_CAPTURE_INPUT  0x08
+#define PV_UNIFIED2_INPUT 0x10
 
 #define PV_FILE_ACCESS_TIME   0x01
 #define PV_FILE_CREATION_TIME 0x02

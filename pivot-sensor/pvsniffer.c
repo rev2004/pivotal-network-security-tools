@@ -32,24 +32,13 @@
 
 */
 
-#include <pcap.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <netinet/ip_icmp.h>
+
 
 #include "pvcommon.h"
+#include "pivot-sensor.h"
 
 pcap_t* pcap_device;
-int link_hdr_len;
+int link_header_length;
 
 int check_pcap_interface
 
@@ -60,25 +49,25 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
    uint32_t  src_ip, netmask;
    struct bpf_program  bpfp;
 
-   if (strncmp(device, "NONE", 4) < 0)
+   if ((strncmp(device, "NONE", 4) == 0) || (strlen(device) == 0))
    {
-      if ((device = pcap_lookupdev(errbuf)) == NULL)
+      if ((device = pcap_lookupdev(error_buffer)) == NULL)
       {
-         printf("pcap_lookupdev(): %s\n", errbuf);
+         printf("pcap_lookupdev(): %s\n", error_buffer);
          return NULL;
       }
    }
 
    if ((pdev = pcap_open_live(device, BUFSIZ, 1, 0, error_buffer)) == NULL)
    {
-      printf("pcap_open_live(): %s\n", errbuf);
+      printf("pcap_open_live(): %s\n", error_buffer);
       return NULL;
    }
 
     // Get network device source IP address and netmask.
-    if (pcap_lookupnet(device, &srcip, &netmask, errbuf) < 0)
+    if (pcap_lookupnet(device, &srcip, &netmask, error_buffer) < 0)
     {
-        printf("pcap_lookupnet: %s\n", errbuf);
+        printf("pcap_lookupnet: %s\n", error_buffer);
         return NULL;
     }
 
@@ -105,14 +94,14 @@ void capture_loop(int packets, pcap_handler func)
    int link_type;
 
     // Determine the datalink layer type.
-   if ((linktype = pcap_datalink(pcap_device)) < 0)
+   if ((link_type = pcap_datalink(pcap_device)) < 0)
    {
       printf("pcap_datalink(): %s\n", pcap_geterr(pcap_device));
       return;
    }
 
     // Set the datalink layer header size.
-   switch (linktype)
+   switch (link_type)
    {
    case DLT_NULL:
       link_header_length = 4;
@@ -128,7 +117,7 @@ void capture_loop(int packets, pcap_handler func)
       break;
 
    default:
-      printf("Unsupported datalink (%d)\n", linktype);
+      printf("Unsupported datalink (%d)\n", link_type);
       return;
    }
 
@@ -217,7 +206,7 @@ int start_capture(char *interface, const char *bpf_string)
       signal(SIGTERM, terminate_capture);
       signal(SIGQUIT, terminate_capture);
       capture_loop(pcap_device, packets, (pcap_handler)parse_packet);
-      bailout(0);
+      terminate_capture(0);
    }
 
    return(0);
