@@ -29,21 +29,19 @@
 
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "pvcommon.h"
 #include "pivot-sensor.h"
 
-static uint32_t sensor_id = 0;
+static unsigned int sensor_id = 0;
 
 int main(int argc, char *argv[])
 {
    char pv_out_file[PV_PATH_MAX_LENGTH];
    char server_ip_address[PV_IP_ADDR_MAX];
    char filter_file[PV_PATH_MAX_LENGTH];
-   char capture_device[PV_PATH_MAX_LENGTH]
+   char capture_device[PV_PATH_MAX_LENGTH];
+   char bpf_string[PV_PATH_MAX_LENGTH];
    int mode;
    int res = open_log_file(argv[0]);
 
@@ -62,7 +60,7 @@ int main(int argc, char *argv[])
       {
          if (mode & PV_FILTER_ON)
          {
-            parse_filter_file(filter_file, bpf_string);
+            /* TODO: parse_filter_file(filter_file, bpf_string); */
          }
          else
          {
@@ -106,9 +104,10 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
 
    tlen = get_time_string(timestr, 99);
 
-   memset(pv_event_filename, 0, PV_PATH_MAX);
-   memset(in_file, 0, PV_PATH_MAX);
-   memset(filter_file, 0, PV_PATH_MAX);
+   memset(capture_device, 0, PV_PATH_MAX_LENGTH);
+   memset(pv_event_filename, 0, PV_PATH_MAX_LENGTH);
+   memset(server_ip_address, 0, PV_PATH_MAX_LENGTH);
+   memset(filter_file, 0, PV_PATH_MAX_LENGTH);
    strncpy(pv_event_filename, EVENT_FILE, strlen(EVENT_FILE)); /* the default event filename */
    strncpy(capture_device, "NONE", 4);
 
@@ -186,7 +185,7 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
 			   {
 			      printf("parse_command_line_args() <INFO> Server IP address: %s\n", argv[i+1]);
                strncpy(server_ip_address, argv[i+1], strlen(argv[i+1]));
-			      if (validate_ipv4_address(gui_ip_address) < 0)
+			      if (validate_ipv4_address(server_ip_address) < 0)
 			      {
 				      print_log_entry("parse_command_line_args() <ERROR> Invalid IPv4 address.\n");
                   return(-1);

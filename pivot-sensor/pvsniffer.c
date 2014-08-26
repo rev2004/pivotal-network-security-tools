@@ -40,8 +40,6 @@
 pcap_t* pcap_device;
 int link_header_length;
 
-int check_pcap_interface
-
 pcap_t* open_pcap_socket(char* device, const char* bpfstr)
 {
    char error_buffer[PCAP_ERRBUF_SIZE];
@@ -64,23 +62,22 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
       return NULL;
    }
 
-    // Get network device source IP address and netmask.
-    if (pcap_lookupnet(device, &srcip, &netmask, error_buffer) < 0)
+    /* Get network device source IP address and netmask. */
+    if (pcap_lookupnet(device, &src_ip, &netmask, error_buffer) < 0)
     {
         printf("pcap_lookupnet: %s\n", error_buffer);
         return NULL;
     }
 
-    // Convert the packet filter epxression into a packet
-    // filter binary.
-    if (pcap_compile(pdev, &bpf, (char*)bpfstr, 0, netmask))
+    /* Convert the packet filter epxression into a packet filter binary. */
+    if (pcap_compile(pdev, &bpfp, (char*)bpfstr, 0, netmask))
     {
         printf("pcap_compile(): %s\n", pcap_geterr(pcap_device));
         return NULL;
     }
 
-    // Assign the packet filter to the given libpcap socket.
-    if (pcap_setfilter(pdev, &bpf) < 0)
+    /* Assign the packet filter to the given libpcap socket. */
+    if (pcap_setfilter(pdev, &bpfp) < 0)
     {
         printf("pcap_setfilter(): %s\n", pcap_geterr(pdev));
         return NULL;
@@ -93,14 +90,14 @@ void capture_loop(int packets, pcap_handler func)
 {
    int link_type;
 
-    // Determine the datalink layer type.
+    /* Determine the datalink layer type. */
    if ((link_type = pcap_datalink(pcap_device)) < 0)
    {
       printf("pcap_datalink(): %s\n", pcap_geterr(pcap_device));
       return;
    }
 
-    // Set the datalink layer header size.
+    /* Set the datalink layer header size. */
    switch (link_type)
    {
    case DLT_NULL:
@@ -121,7 +118,7 @@ void capture_loop(int packets, pcap_handler func)
       return;
    }
 
-    // Start capturing packets.
+    /* Start capturing packets. */
    if (pcap_loop(pcap_device, packets, func, 0) < 0)
    {
       printf("pcap_loop failed: %s\n", pcap_geterr(pcap_device));
@@ -137,15 +134,14 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
     char iphdrInfo[256], srcip[256], dstip[256];
     unsigned short id, seq;
 
-    // Skip the datalink layer header and get the IP header fields.
+    /* Skip the datalink layer header and get the IP header fields. */
     packetptr += link_header_length;
     iphdr = (struct ip*)packetptr;
     strcpy(srcip, inet_ntoa(iphdr->ip_src));
     strcpy(dstip, inet_ntoa(iphdr->ip_dst));
     sprintf(iphdrInfo, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
 
-    // Advance to the transport layer header then parse and display
-    // the fields based on the type of hearder: tcp, udp or icmp.
+    /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
     packetptr += 4*iphdr->ip_hl;
     switch (iphdr->ip_p)
     {
@@ -205,7 +201,7 @@ int start_capture(char *interface, const char *bpf_string)
       signal(SIGINT, terminate_capture);
       signal(SIGTERM, terminate_capture);
       signal(SIGQUIT, terminate_capture);
-      capture_loop(pcap_device, packets, (pcap_handler)parse_packet);
+      capture_loop(packets, (pcap_handler)parse_packet);
       terminate_capture(0);
    }
 

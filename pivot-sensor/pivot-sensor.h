@@ -33,10 +33,10 @@
    Constant Definitions
 */
 
-#ifndef PIVOTAL_COMMON_H
-#define PIVOTAL_COMMON_H
+#ifndef PIVOTAL_SENSOR_H
+#define PIVOTAL_SENSOR_H
 
-#include <pcap.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -49,6 +49,7 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
+#include <pcap.h>
 
 /* pivot-sensor.c */
 
