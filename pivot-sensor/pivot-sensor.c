@@ -17,7 +17,7 @@
 */
 
 /*
-   pivotal-sensor.c
+   pivot-sensor.c
 
    Title : Pivotal NST Sensor
    Author: Derek Chadwick
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
       printf("pivot-sensor.c main() <ERROR> Could not open log file.\n");
       exit(FILE_ERROR);
    }
-   print_log_entry("pivot-sensor.c main() <INFO> Starting FineLine 1.0\n");
+   print_log_entry("pivot-sensor.c main() <INFO> Starting Pivotal Sensor 1.0\n");
 
    mode = parse_command_line_args(argc, argv, pv_out_file, server_ip_address, filter_file);
    if (mode > 0)
@@ -65,13 +65,13 @@ int main(int argc, char *argv[])
       else
       {
          print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options!\n");
-         print_help();
+         show_help();
       }
    }
    else
    {
       print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options!\n");
-      print_help();
+      show_help();
    }
 
    close_log_file();
@@ -125,11 +125,11 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
          }
          else if (strncmp(argv[i], "-s", 2) == 0)
          {
-            retval = retval | PV_GUI_OUT; /* Send event records to GUI */
+            retval = retval | PV_SERVER_OUT; /* Send event records to Pivotal server */
          }
          else if (strncmp(argv[i], "-b", 2) == 0)
          {
-            retval = retval | PV_FILE_OUT | PV_GUI_OUT; /* Create FineLine event file and send to GUI */
+            retval = retval | PV_FILE_OUT | PV_SERVER_OUT; /* Create FineLine event file and send events to server */
          }
          else if (strncmp(argv[i], "-o", 2) == 0)
          {
@@ -147,53 +147,29 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
          }
          else if (strncmp(argv[i], "-i", 2) == 0)
          {
-            /* Windows event file name to use for input */
-            if ((i+1) < argc)
-            {
-               printf("parse_command_line_args() <INFO> Windows event file: %s\n", argv[i+1]);
-               strncpy(in_file, argv[i+1], strlen(argv[i+1]));
-			      input_file_specified = 1;
-			      if (strstr(in_file, ".evtx"))
-			      {
-				      retval = retval | PV_EVTX_IN;
-			      }
-			      else if (strstr(in_file, ".evt"))
-			      {
-				      retval = retval | PV_EVT_IN;
-			      }
-               else
-               {
-                  print_log_entry("parse_command_line_args() <ERROR> Unknown event file type.\n");
-                  return(-1);
-               }
-            }
-            else
-            {
-               print_log_entry("parse_command_line_args() <ERROR> Missing Windows event file name.\n");
-               return(-1);
-            }
+
          }
-		 else if (strncmp(argv[i], "-a", 2) == 0)
-		 {
-			 if ((i+1) < argc)
-			 {
-			    printf("parse_command_line_args() <INFO> GUI IP address: %s\n", argv[i+1]);
-             strncpy(gui_ip_address, argv[i+1], strlen(argv[i+1]));
-			    if (validate_ipv4_address(gui_ip_address) < 0)
-			    {
-				    print_log_entry("parse_command_line_args() <ERROR> Invalid IPv4 address.\n");
-                return(-1);
-			    }
-			 }
-			 else
-			 {
-			    print_log_entry("parse_command_line_args() <ERROR> Missing IPv4 address.\n");
-             return(-1);
-			 }
-		 }
+		   else if (strncmp(argv[i], "-a", 2) == 0)
+		   {
+			   if ((i+1) < argc)
+			   {
+			      printf("parse_command_line_args() <INFO> Server IP address: %s\n", argv[i+1]);
+               strncpy(server_ip_address, argv[i+1], strlen(argv[i+1]));
+			      if (validate_ipv4_address(gui_ip_address) < 0)
+			      {
+				      print_log_entry("parse_command_line_args() <ERROR> Invalid IPv4 address.\n");
+                  return(-1);
+			      }
+			   }
+			   else
+			   {
+			      print_log_entry("parse_command_line_args() <ERROR> Missing IPv4 address.\n");
+               return(-1);
+			   }
+		   }
          else if (strncmp(argv[i], "-f", 2) == 0)
          {
-            /* Windows event file name to use for input */
+            /* Filter file name  */
             if ((i+1) < argc)
             {
                printf("parse_command_line_args() <INFO> Filter file: %s\n", argv[i+1]);
@@ -202,21 +178,11 @@ int parse_command_line_args(int argc, char *argv[], char *pv_event_filename, cha
             }
             else
             {
-               print_log_entry("parse_command_line_args() <ERROR> Missing Windows event file name.\n");
+               print_log_entry("parse_command_line_args() <ERROR> Missing filter file name.\n");
                return(-1);
             }
          }
       }
-   }
-
-   /* Check for input file on command line, if none then do the live system log. */
-   if (input_file_specified == 0)
-   {
-	   strncpy(in_file, EVENT_LOG_PATH, strlen(EVENT_LOG_PATH));
-	   strncat(in_file, PATH_SEPARATOR, strlen(PATH_SEPARATOR));
-	   strncat(in_file, SECURITY_LOG_FILE, strlen(SECURITY_LOG_FILE));
-	   retval = retval | PV_EVTX_IN;
-	   print_log_entry("parse_command_line_args() <INFO> Default input file = Security.evtx\n");
    }
 
    print_log_entry("parse_command_line_args() <INFO> Finished processing command line arguments.\n");

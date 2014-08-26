@@ -1,21 +1,36 @@
 
 /*  Copyright 2014 Derek Chadwick
 
-    This file is part of the FineLine Computer Forensics Timeline Tools.
+    This file is part of the Pivotal Network Security Tools.
 
-    FineLine is free software: you can redistribute it and/or modify
+    Pivotal is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    FineLine is distributed in the hope that it will be useful,
+    Pivotal is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with FineLine.  If not, see <http://www.gnu.org/licenses/>.
+    along with Pivotal.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+
+/*
+   pvsocket.c
+
+   Title : Pivotal NST.
+   Author: Derek Chadwick
+   Date  : 06/07/2014
+
+   Purpose: Wrapper functions for network sockets.
+
+*/
+
+
+#define LINUX_BUILD /* Not doing windows support */
 
 #ifdef LINUX_BUILD
 
