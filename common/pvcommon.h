@@ -36,6 +36,7 @@
 #ifndef PIVOTAL_COMMON_H
 #define PIVOTAL_COMMON_H
 
+#include <stddef.h>
 
 #define DEBUG 1
 
@@ -132,6 +133,8 @@ int close_socket();
 /* pvlog.c */
 int open_log_file(char *startup_path);
 int print_log_entry(char *estr);
+int sprint_log_entry(char *estr, char *eval);
+int iprint_log_entry(char *estr, int ival);
 int close_log_file();
 
 

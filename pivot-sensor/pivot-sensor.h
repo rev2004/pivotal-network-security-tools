@@ -64,7 +64,8 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
 void terminate_capture(int signal_number);
 int start_capture(char *interface, const char *bpf_string);
 
-/* */
+/* pvfilter.c */
 
+int load_bpf_filters(char *filter_filename, char *filter_string);
 
 #endif

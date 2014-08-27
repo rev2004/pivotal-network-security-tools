@@ -30,8 +30,6 @@
 */
 
 
-#define LINUX_BUILD /* Not doing windows support */
-
 #ifdef LINUX_BUILD
 
 #include <sys/socket.h>
@@ -56,7 +54,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "fineline-ws.h"
+#include "pvcommon.h"
 
 
 #ifdef LINUX_BUILD
@@ -83,7 +81,7 @@ int init_socket(char *gui_ip_address)
     memset(&serv_addr, '0', sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(atoi(GUI_SERVER_PORT_STRING));
+    serv_addr.sin_port = htons(atoi(SERVER_PORT_STRING));
 
     if(inet_pton(AF_INET, gui_ip_address, &serv_addr.sin_addr)<=0)
     {
