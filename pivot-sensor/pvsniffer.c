@@ -51,35 +51,35 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
    {
       if ((device = pcap_lookupdev(error_buffer)) == NULL)
       {
-         printf("pcap_lookupdev(): %s\n", error_buffer);
+         sprint_log_entry("open_pcap_socket()", error_buffer);
          return NULL;
       }
    }
 
    if ((pdev = pcap_open_live(device, BUFSIZ, 1, 0, error_buffer)) == NULL)
    {
-      printf("pcap_open_live(): %s\n", error_buffer);
+      sprint_log_entry("open_pcap_socket()", error_buffer);
       return NULL;
    }
 
     /* Get network device source IP address and netmask. */
     if (pcap_lookupnet(device, &src_ip, &netmask, error_buffer) < 0)
     {
-        printf("pcap_lookupnet: %s\n", error_buffer);
+        sprint_log_entry("open_pcap_socket()", error_buffer);
         return NULL;
     }
 
     /* Convert the packet filter epxression into a packet filter binary. */
     if (pcap_compile(pdev, &bpfp, (char*)bpfstr, 0, netmask))
     {
-        printf("pcap_compile(): %s\n", pcap_geterr(pcap_device));
+        sprint_log_entry("open_pcap_socket()", pcap_geterr(pcap_device));
         return NULL;
     }
 
     /* Assign the packet filter to the given libpcap socket. */
     if (pcap_setfilter(pdev, &bpfp) < 0)
     {
-        printf("pcap_setfilter(): %s\n", pcap_geterr(pdev));
+        sprint_log_entry("open_pcap_socket()", pcap_geterr(pdev));
         return NULL;
     }
 
@@ -93,7 +93,7 @@ void capture_loop(int packets, pcap_handler func)
     /* Determine the datalink layer type. */
    if ((link_type = pcap_datalink(pcap_device)) < 0)
    {
-      printf("pcap_datalink(): %s\n", pcap_geterr(pcap_device));
+      sprint_log_entry("capture_loop()", pcap_geterr(pcap_device));
       return;
    }
 
@@ -114,14 +114,14 @@ void capture_loop(int packets, pcap_handler func)
       break;
 
    default:
-      printf("Unsupported datalink (%d)\n", link_type);
+      iprint_log_entry("capture_loop() <ERROR> Unsupported datalink", link_type);
       return;
    }
 
     /* Start capturing packets. */
    if (pcap_loop(pcap_device, packets, func, 0) < 0)
    {
-      printf("pcap_loop failed: %s\n", pcap_geterr(pcap_device));
+      sprint_log_entry("pcap_loop() <ERROR>", pcap_geterr(pcap_device));
    }
 }
 
@@ -175,8 +175,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
         printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
         break;
     }
-    printf(
-        "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+    printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
 }
 
 void terminate_capture(int signal_number)

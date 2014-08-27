@@ -9,7 +9,7 @@ CFLAGS=-c -Wall -ansi -DLINUX_BUILD -D_GNU_SOURCE
 
 # Linker flags
 
-LDFLAGS=-static
+LDFLAGS=
 LIBS=-lpcap
 LIBDIRS=-L../../libs
 
@@ -17,6 +17,7 @@ LIBDIRS=-L../../libs
 
 SOURCES=pivot-sensor.c \
 pvsniffer.c \
+pvfilter.c  \
 ../common/pvlog.c \
 ../common/pvutil.c \
 ../common/pvsocket.c
@@ -45,6 +46,6 @@ strip:
 	strip pivot-sensor
 
 clean:
-	rm *.o pivot-sensor
+	rm *.o pivot-sensor ../common/*.o
 
 

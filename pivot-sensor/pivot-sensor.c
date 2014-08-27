@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
       {
          if (mode & PV_FILTER_ON)
          {
-            /* TODO: parse_filter_file(filter_file, bpf_string); */
+            load_bpf_filters(filter_file, bpf_string);
          }
          else
          {
@@ -98,7 +98,6 @@ int main(int argc, char *argv[])
 int parse_command_line_args(int argc, char *argv[], char *capture_device, char *pv_event_filename, char *server_ip_address, char *filter_file)
 {
    int retval = 0;
-   int input_file_specified = 0;
    char timestr[100];
    int tlen;
 
