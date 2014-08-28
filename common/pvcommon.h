@@ -37,6 +37,7 @@
 #define PIVOTAL_COMMON_H
 
 #include <stddef.h>
+#include "uthash.h"
 
 #define DEBUG 1
 
@@ -106,6 +107,16 @@ struct pv_project_header
 
 typedef struct pv_project_header pv_project_header_t;
 
+struct pv_url_record
+{
+   char url_record_string[PV_MAX_INPUT_STR];
+   double url_time;
+   long access_count;
+   char url_time_string[32];
+   UT_hash_handle hh;
+};
+
+typedef struct pv_url_record pv_url_record_t;
 
 /* pvutil.c */
 

@@ -18,6 +18,8 @@ LIBDIRS=-L../../libs
 SOURCES=pivot-sensor.c \
 pvsniffer.c \
 pvfilter.c  \
+pvurlmap.c  \
+pvipmap.c   \
 ../common/pvlog.c \
 ../common/pvutil.c \
 ../common/pvsocket.c

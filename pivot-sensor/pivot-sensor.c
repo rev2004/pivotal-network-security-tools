@@ -182,6 +182,7 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
 		   {
 			   if ((i+1) < argc)
 			   {
+			      /* IP address of the Pivotal NST Server. */
 			      printf("parse_command_line_args() <INFO> Server IP address: %s\n", argv[i+1]);
                strncpy(server_ip_address, argv[i+1], strlen(argv[i+1]));
 			      if (validate_ipv4_address(server_ip_address) < 0)
