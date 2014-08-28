@@ -51,6 +51,7 @@
 #include <netinet/ip_icmp.h>
 #include <pcap.h>
 
+
 /* pivot-sensor.c */
 
 int parse_command_line_args(int argc, char *argv[], char *capture_device, char *pv_event_filename, char *server_ip_address, char *filter_file);
@@ -67,5 +68,17 @@ int start_capture(char *interface, const char *bpf_string);
 /* pvfilter.c */
 
 int load_bpf_filters(char *filter_filename, char *filter_string);
+
+/* pvurlmap.c */
+
+void add_url(pv_url_record_t *flurl);
+pv_url_record_t *find_url(char *lookup_string);
+void write_url_map(FILE *outfile);
+void send_url_map();
+void delete_url(pv_url_record_t *url_record);
+void delete_all();
+pv_url_record_t *get_first_url_record();
+pv_url_record_t *get_last_url_record();
+
 
 #endif
