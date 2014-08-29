@@ -64,13 +64,14 @@ int main(int argc, char *argv[])
          }
          else
          {
-            strncpy(bpf_string, "ip", 2); /* Only do layer 3 and above */
-         }
+            strncpy(bpf_string, "ip", 2); /* Only do layer 3 and above, (and not src localhost) */
+         }                                /* as we will be pushing events to the Pivotal server */
          start_capture(capture_device, bpf_string);
       }
       else if (mode & PV_UNIFIED2_INPUT)
       {
-         /* TODO: tail suricata logs */
+         /* TODO: tail suricata logs (popen("tail")) */
+         printf("TODO: Unified2 log monitoring not implemented.\n");
       }
       else
       {
