@@ -34,7 +34,9 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
-
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 
 /* Bail Out */
 int fatal(const char *str)
@@ -193,10 +195,73 @@ int validate_ipv6_address(char *ipv6_addr)
 {
 	/* TODO: definitely need a regex for this one */
    /* struct sockaddr_in sa;
-   int result = inet_pton(AF_INET, ipv6_addr, &(sa.sin_addr));
+   int result = inet_pton(AF_INET6, ipv6_addr, &(sa.sin6_addr));
    */
 
 	return(0);
+}
+
+int get_ip_address(char *ip_addr)
+{
+   struct ifaddrs *if_addr_s = NULL;
+   struct ifaddrs *ifap      = NULL;
+   void *tmp_addr_ptr        = NULL;
+
+   getifaddrs(&if_addr_s);
+
+   for (ifap = if_addr_s; ifap != NULL; ifap = ifap->ifa_next)
+   {
+      if (ifap->ifa_addr->sa_family == AF_INET)
+      {
+         tmp_addr_ptr=&((struct sockaddr_in *)ifap->ifa_addr)->sin_addr;
+         char addr_buffer[INET_ADDRSTRLEN];
+         inet_ntop(AF_INET, tmp_addr_ptr, addr_buffer, INET_ADDRSTRLEN);
+         printf("%s IP Address %s\n", ifap->ifa_name, addr_buffer);
+      }
+      else if (ifap->ifa_addr->sa_family == AF_INET6)
+      {
+         tmp_addr_ptr=&((struct sockaddr_in6 *)ifap->ifa_addr)->sin6_addr;
+         char addr_buffer[INET6_ADDRSTRLEN];
+         inet_ntop(AF_INET6, tmp_addr_ptr, addr_buffer, INET6_ADDRSTRLEN);
+         printf("%s IP Address %s\n", ifap->ifa_name, addr_buffer);
+      }
+   }
+   if (if_addr_s != NULL)
+      freeifaddrs(if_addr_s);
+
+   return(0);
+}
+
+/* DEPRECATED: use above ^ */
+int get_ipv4_address(char *ipv4_addr)
+{
+   FILE *fp = popen("ifconfig", "r");
+
+   if (fp != NULL)
+   {
+      char *p=NULL, *e;
+      size_t n;
+      while ((getline(&p, &n, fp) > 0) && p)
+      {
+         if ((p = strstr(p, "inet ")) != NULL)
+         {
+            p+=5;
+            if ((p = strchr(p, ':')) != NULL)
+            {
+               ++p;
+               if ((e = strchr(p, ' ')) != NULL)
+               {
+                  *e='\0';
+                  printf("%s\n", p);
+               }
+            }
+         }
+      }
+   }
+
+   pclose(fp);
+
+   return(0);
 }
 
 char *ltrim(char *s)

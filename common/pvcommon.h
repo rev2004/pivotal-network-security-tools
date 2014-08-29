@@ -128,6 +128,7 @@ int xfree(char *buf, int len);
 int print_help();
 char* xitoa(int value, char* result, int len, int base);
 int get_time_string(char *tstr, int slen);
+int get_ip_address(char *ip_addr);
 int validate_ipv4_address(char *ipv4_addr);
 int validate_ipv6_address(char *ipv6_addr);
 char *ltrim(char *s);
