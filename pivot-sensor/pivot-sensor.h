@@ -77,9 +77,19 @@ pv_url_record_t *find_url(char *lookup_string);
 void write_url_map(FILE *outfile);
 void send_url_map();
 void delete_url(pv_url_record_t *url_record);
-void delete_all();
+void delete_all_urls();
 pv_url_record_t *get_first_url_record();
 pv_url_record_t *get_last_url_record();
 
+/* pvipmap.c */
+
+void add_ip(pv_ip_record_t *flip);
+pv_ip_record_t *find_ip(char *lookup_string);
+void write_ip_map(FILE *outfile);
+void send_ip_map();
+void delete_ip(pv_ip_record_t *ip_record);
+void delete_all_ips();
+pv_ip_record_t *get_first_ip_record();
+pv_ip_record_t *get_last_ip_record();
 
 #endif
