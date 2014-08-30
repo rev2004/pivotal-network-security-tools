@@ -24,7 +24,7 @@
    Date  : 06/07/2014
 
    Purpose: Pivotal Sensor Main Function. Processes command line options
-            and executes packet sniffer mode or unified2 log follower
+            and executes packet sniffer mode or Snort/Suricata log follower
             mode.
 
 */

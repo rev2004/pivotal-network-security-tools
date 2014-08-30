@@ -92,4 +92,10 @@ void delete_all_ips();
 pv_ip_record_t *get_first_ip_record();
 pv_ip_record_t *get_last_ip_record();
 
+/* pvtail.c */
+
+int open_tail_pipe(char *log_file_name);
+int start_tail(int pivot_options, int log_option);
+int follow_tail();
+
 #endif
