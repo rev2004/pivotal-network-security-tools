@@ -20,6 +20,7 @@ pvsniffer.c \
 pvfilter.c  \
 pvurlmap.c  \
 pvipmap.c   \
+pvtail.c    \
 ../common/pvlog.c \
 ../common/pvutil.c \
 ../common/pvsocket.c

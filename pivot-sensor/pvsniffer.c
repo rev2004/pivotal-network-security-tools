@@ -28,7 +28,14 @@
             on the user specified network interface. If no interface is specified
             the default is used (eth0). A filter file can be specified as a
             commmand line option. The filter file is plain text with lines
-            consisting of BSD Packet Filter (BPF) rules.
+            consisting of BSD Packet Filter (BPF) rules. See Wireshark User Guide
+            or TCPDUMP man page for more info on BPF rules.
+
+   Note   : The default filter is (ip and not src localhost). The negative condition
+            is required since we will be sending event packets to the Pivot Server,
+            so we do not want to enter into the recursive spiral of self-analysis.
+
+   Status : EXPERIMENTAL - not for use in production networks.
 
 */
 
