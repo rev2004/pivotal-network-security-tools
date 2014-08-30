@@ -118,6 +118,16 @@ struct pv_url_record
 
 typedef struct pv_url_record pv_url_record_t;
 
+struct pv_ip_record
+{
+   char ip_address[256];
+   long packet_count;
+   long data_size;
+   UT_hash_handle hh;
+};
+
+typedef struct pv_ip_record pv_ip_record_t;
+
 /* pvutil.c */
 
 int fatal(char *str);

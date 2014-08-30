@@ -73,7 +73,7 @@ void delete_url(pv_url_record_t *url_record)
     free(url_record);
 }
 
-void delete_all()
+void delete_all_urls()
 {
   pv_url_record_t *current_url, *tmp;
 

@@ -191,6 +191,13 @@ void terminate_capture(int signal_number)
     exit(0);
 }
 
+/*
+   Function: start_capture
+   Purpose : Opens the pcap socket, sets interrupt signals then calls
+             capture_loop() to start packet processing.
+   Input   : Interface and filter strings.
+   Output  : Returns -1 on error.
+*/
 int start_capture(char *interface, const char *bpf_string)
 {
    int packets = 0;
@@ -204,5 +211,5 @@ int start_capture(char *interface, const char *bpf_string)
       terminate_capture(0);
    }
 
-   return(0);
+   return(-1);
 }
