@@ -54,6 +54,7 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
    uint32_t  src_ip, netmask;
    struct bpf_program  bpfp;
 
+/* DEPRECATED: default to eth0 if interface not specified by user.
    if ((strncmp(device, "NONE", 4) == 0) || (strlen(device) == 0))
    {
       if ((device = pcap_lookupdev(error_buffer)) == NULL)
@@ -62,6 +63,7 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
          return NULL;
       }
    }
+*/
 
    if ((pdev = pcap_open_live(device, BUFSIZ, 1, 0, error_buffer)) == NULL)
    {
@@ -138,7 +140,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
     struct icmphdr* icmphdr;
     struct tcphdr* tcphdr;
     struct udphdr* udphdr;
-    char iphdrInfo[256], srcip[256], dstip[256];
+    char ip_header_info[256], srcip[256], dstip[256];
     unsigned short id, seq;
 
     /* Skip the datalink layer header and get the IP header fields. */
@@ -146,7 +148,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
     iphdr = (struct ip*)packetptr;
     strcpy(srcip, inet_ntoa(iphdr->ip_src));
     strcpy(dstip, inet_ntoa(iphdr->ip_dst));
-    sprintf(iphdrInfo, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
+    sprintf(ip_header_info, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
 
     /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
     packetptr += 4*iphdr->ip_hl;
@@ -155,7 +157,7 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
     case IPPROTO_TCP:
         tcphdr = (struct tcphdr*)packetptr;
         printf("TCP  %s:%d -> %s:%d\n", srcip, ntohs(tcphdr->source), dstip, ntohs(tcphdr->dest));
-        printf("%s\n", iphdrInfo);
+        printf("%s\n", ip_header_info);
         printf("%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d\n",
                (tcphdr->urg ? 'U' : '*'),
                (tcphdr->ack ? 'A' : '*'),
@@ -170,18 +172,21 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
     case IPPROTO_UDP:
         udphdr = (struct udphdr*)packetptr;
         printf("UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
-        printf("%s\n", iphdrInfo);
+        printf("%s\n", ip_header_info);
         break;
 
     case IPPROTO_ICMP:
         icmphdr = (struct icmphdr*)packetptr;
         printf("ICMP %s -> %s\n", srcip, dstip);
-        printf("%s\n", iphdrInfo);
+        printf("%s\n", ip_header_info);
         memcpy(&id, (u_char*)icmphdr+4, 2);
         memcpy(&seq, (u_char*)icmphdr+6, 2);
         printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
         break;
-    }
+
+      default:
+         printf("Src: %s Dst: %s Hdr: %s\n", srcip, dstip, ip_header_info);
+   }
     printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
 }
 

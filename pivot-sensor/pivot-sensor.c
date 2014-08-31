@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 {
    char pv_out_file[PV_PATH_MAX_LENGTH];
    char server_ip_address[PV_IP_ADDR_MAX];
+   char local_ip_address[PV_IP_ADDR_MAX];
    char filter_file[PV_PATH_MAX_LENGTH];
    char capture_device[PV_PATH_MAX_LENGTH];
    char bpf_string[PV_PATH_MAX_LENGTH];
@@ -64,8 +65,13 @@ int main(int argc, char *argv[])
          }
          else
          {
-            strncpy(bpf_string, "ip", 2); /* Only do layer 3 and above, (and not src localhost) */
-         }                                /* as we will be pushing events to the Pivotal server */
+            /* Only do layer 3 and above, (and not src localhost) */
+            /* as we will be pushing events to the Pivotal server */
+            get_ip_address(capture_device, local_ip_address);
+            /* sprintf(bpf_string, "ip and (not host %s)", local_ip_address); */
+            strncpy(bpf_string, "ip", 2); /* testing */
+            printf("main() Interface: %s IP Address: %s\n", capture_device, local_ip_address);
+         }
          start_capture(capture_device, bpf_string);
       }
       else if (mode & PV_UNIFIED2_INPUT)
@@ -75,7 +81,7 @@ int main(int argc, char *argv[])
       }
       else
       {
-         print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options!\n");
+         print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options - no capture mode specified!\n");
          show_sensor_help();
       }
    }
@@ -109,7 +115,7 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
    memset(server_ip_address, 0, PV_PATH_MAX_LENGTH);
    memset(filter_file, 0, PV_PATH_MAX_LENGTH);
    strncpy(pv_event_filename, EVENT_FILE, strlen(EVENT_FILE)); /* the default event filename */
-   strncpy(capture_device, "NONE", 4);
+   strncpy(capture_device, "eth0", 4);
 
    if (tlen > 0)
    {
@@ -123,7 +129,7 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
 
    if (argc < 2)
    {
-	  print_log_entry("parse_command_line_args(): invalid arguments < 2\n");
+	   print_log_entry("parse_command_line_args(): invalid arguments < 2\n");
       return(-1);
    }
    else
