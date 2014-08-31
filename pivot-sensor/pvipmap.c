@@ -38,10 +38,10 @@ void add_ip(pv_ip_record_t *flip)
 {
     pv_ip_record_t *s;
 
-    HASH_FIND_STR(ip_map, flip->ip_address , s);  /* id already in the hash? */
+    HASH_FIND_STR(ip_map, flip->source_ip_address , s);  /* id already in the hash? */
     if (s == NULL)
     {
-      HASH_ADD_STR(ip_map, ip_address, flip);  /* id: name of key field */
+      HASH_ADD_STR(ip_map, source_ip_address, flip);  /* id: name of key field */
     }
 
 }
@@ -90,7 +90,8 @@ void write_ip_map(FILE *outfile)
 
     for(s=ip_map; s != NULL; s=(pv_ip_record_t *)(s->hh.next))
     {
-        fputs(s->ip_address, outfile);
+        fputs(s->source_ip_address, outfile);
+        /* TODO: serialize record as Fineline event and write to file. */
     }
 }
 
@@ -99,7 +100,8 @@ void send_ip_map()
     pv_ip_record_t *s;
 
     for(s=ip_map; s != NULL; s=(pv_ip_record_t *)(s->hh.next))    {
-        send_event(s->ip_address);
+        send_event(s->source_ip_address);
+        /* TODO: serialize the record as a Fineline event and send to server. */
     }
 }
 
@@ -109,7 +111,9 @@ void print_ip_map()
 
     for(s=ip_map; s != NULL; s=(pv_ip_record_t *)(s->hh.next))
     {
-        printf("URL: %s\n", s->ip_address);
+        printf("Source: %s\n", s->source_ip_address);
+        printf("Destination: %s\n", s->source_ip_address);
+        /* TODO: print rest of record fields. */
     }
 }
 
