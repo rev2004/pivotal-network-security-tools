@@ -21,6 +21,7 @@ pvfilter.c  \
 pvurlmap.c  \
 pvipmap.c   \
 pvtail.c    \
+pveventfile.c \
 ../common/pvlog.c \
 ../common/pvutil.c \
 ../common/pvsocket.c

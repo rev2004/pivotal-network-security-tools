@@ -201,13 +201,16 @@ int validate_ipv6_address(char *ipv6_addr)
 	return(0);
 }
 
-int get_ip_address(char *ip_addr)
+int get_ip_address(char *interface, char *ip_addr)
 {
    struct ifaddrs *if_addr_s = NULL;
    struct ifaddrs *ifap      = NULL;
    void *tmp_addr_ptr        = NULL;
 
-   getifaddrs(&if_addr_s);
+   if (getifaddrs(&if_addr_s) < 0)
+   {
+      fatal("get_ip_address() <FATAL> Could not get IP address!!!");
+   }
 
    for (ifap = if_addr_s; ifap != NULL; ifap = ifap->ifa_next)
    {
@@ -216,14 +219,26 @@ int get_ip_address(char *ip_addr)
          tmp_addr_ptr=&((struct sockaddr_in *)ifap->ifa_addr)->sin_addr;
          char addr_buffer[INET_ADDRSTRLEN];
          inet_ntop(AF_INET, tmp_addr_ptr, addr_buffer, INET_ADDRSTRLEN);
-         printf("%s IP Address %s\n", ifap->ifa_name, addr_buffer);
+         printf("get_ip_address() Interface: %s IP Address: %s\n", ifap->ifa_name, addr_buffer);
+         if (strncmp(interface, ifap->ifa_name, strlen(interface)) == 0)
+         {
+            strncpy(ip_addr, addr_buffer, strlen(addr_buffer));
+         }
       }
       else if (ifap->ifa_addr->sa_family == AF_INET6)
       {
          tmp_addr_ptr=&((struct sockaddr_in6 *)ifap->ifa_addr)->sin6_addr;
          char addr_buffer[INET6_ADDRSTRLEN];
          inet_ntop(AF_INET6, tmp_addr_ptr, addr_buffer, INET6_ADDRSTRLEN);
-         printf("%s IP Address %s\n", ifap->ifa_name, addr_buffer);
+         printf("get_ip_address() Interface: %s IP Address: %s\n", ifap->ifa_name, addr_buffer);
+
+         /* TODO: add a command line option to specify ipv4 or ipv6 capture,
+                  ignore ipv6 during prototyping cycles.
+         if (strncmp(interface, ifap->ifa_name, strlen(interface)) == 0)
+         {
+            strncpy(ip_addr, addr_buffer, strlen(addr_buffer));
+         }
+         */
       }
    }
    if (if_addr_s != NULL)

@@ -120,7 +120,10 @@ typedef struct pv_url_record pv_url_record_t;
 
 struct pv_ip_record
 {
-   char ip_address[256];
+   char source_ip_address[256];
+   char source_port[8];
+   char destination_ip_address[256];
+   char destination_port[8];
    long packet_count;
    long data_size;
    UT_hash_handle hh;
@@ -138,7 +141,7 @@ int xfree(char *buf, int len);
 int print_help();
 char* xitoa(int value, char* result, int len, int base);
 int get_time_string(char *tstr, int slen);
-int get_ip_address(char *ip_addr);
+int get_ip_address(char *interface, char *ip_addr);
 int validate_ipv4_address(char *ipv4_addr);
 int validate_ipv6_address(char *ipv6_addr);
 char *ltrim(char *s);

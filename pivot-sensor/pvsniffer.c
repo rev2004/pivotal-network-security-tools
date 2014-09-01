@@ -71,28 +71,28 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
       return NULL;
    }
 
-    /* Get network device source IP address and netmask. */
-    if (pcap_lookupnet(device, &src_ip, &netmask, error_buffer) < 0)
-    {
-        sprint_log_entry("open_pcap_socket()", error_buffer);
-        return NULL;
-    }
+   /* Get network device source IP address and netmask. */
+   if (pcap_lookupnet(device, &src_ip, &netmask, error_buffer) < 0)
+   {
+      sprint_log_entry("open_pcap_socket()", error_buffer);
+      return NULL;
+   }
 
-    /* Convert the packet filter epxression into a packet filter binary. */
-    if (pcap_compile(pdev, &bpfp, (char*)bpfstr, 0, netmask))
-    {
-        sprint_log_entry("open_pcap_socket()", pcap_geterr(pcap_device));
-        return NULL;
-    }
+   /* Convert the packet filter epxression into a packet filter binary. */
+   if (pcap_compile(pdev, &bpfp, (char*)bpfstr, 0, netmask))
+   {
+      sprint_log_entry("open_pcap_socket()", pcap_geterr(pcap_device));
+      return NULL;
+   }
 
-    /* Assign the packet filter to the given libpcap socket. */
-    if (pcap_setfilter(pdev, &bpfp) < 0)
-    {
-        sprint_log_entry("open_pcap_socket()", pcap_geterr(pdev));
-        return NULL;
-    }
+   /* Assign the packet filter to the given libpcap socket. */
+   if (pcap_setfilter(pdev, &bpfp) < 0)
+   {
+      sprint_log_entry("open_pcap_socket()", pcap_geterr(pdev));
+      return NULL;
+   }
 
-    return pdev;
+   return pdev;
 }
 
 void capture_loop(int packets, pcap_handler func)
@@ -136,25 +136,25 @@ void capture_loop(int packets, pcap_handler func)
 
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr)
 {
-    struct ip* iphdr;
-    struct icmphdr* icmphdr;
-    struct tcphdr* tcphdr;
-    struct udphdr* udphdr;
-    char ip_header_info[256], srcip[256], dstip[256];
-    unsigned short id, seq;
+   struct ip* iphdr;
+   struct icmphdr* icmphdr;
+   struct tcphdr* tcphdr;
+   struct udphdr* udphdr;
+   char ip_header_info[256], srcip[256], dstip[256];
+   unsigned short id, seq;
 
-    /* Skip the datalink layer header and get the IP header fields. */
-    packetptr += link_header_length;
-    iphdr = (struct ip*)packetptr;
-    strcpy(srcip, inet_ntoa(iphdr->ip_src));
-    strcpy(dstip, inet_ntoa(iphdr->ip_dst));
-    sprintf(ip_header_info, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
+   /* Skip the datalink layer header and get the IP header fields. */
+   packetptr += link_header_length;
+   iphdr = (struct ip*)packetptr;
+   strcpy(srcip, inet_ntoa(iphdr->ip_src));
+   strcpy(dstip, inet_ntoa(iphdr->ip_dst));
+   sprintf(ip_header_info, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
 
-    /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
-    packetptr += 4*iphdr->ip_hl;
-    switch (iphdr->ip_p)
-    {
-    case IPPROTO_TCP:
+   /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
+   packetptr += 4*iphdr->ip_hl;
+   switch (iphdr->ip_p)
+   {
+   case IPPROTO_TCP:
         tcphdr = (struct tcphdr*)packetptr;
         printf("TCP  %s:%d -> %s:%d\n", srcip, ntohs(tcphdr->source), dstip, ntohs(tcphdr->dest));
         printf("%s\n", ip_header_info);
@@ -169,38 +169,111 @@ void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr
                ntohs(tcphdr->window), 4*tcphdr->doff);
         break;
 
-    case IPPROTO_UDP:
-        udphdr = (struct udphdr*)packetptr;
-        printf("UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
-        printf("%s\n", ip_header_info);
-        break;
+   case IPPROTO_UDP:
+      udphdr = (struct udphdr*)packetptr;
+      printf("UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
+      printf("%s\n", ip_header_info);
+      break;
 
-    case IPPROTO_ICMP:
-        icmphdr = (struct icmphdr*)packetptr;
-        printf("ICMP %s -> %s\n", srcip, dstip);
-        printf("%s\n", ip_header_info);
-        memcpy(&id, (u_char*)icmphdr+4, 2);
-        memcpy(&seq, (u_char*)icmphdr+6, 2);
-        printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
-        break;
+   case IPPROTO_ICMP:
+      icmphdr = (struct icmphdr*)packetptr;
+      printf("ICMP %s -> %s\n", srcip, dstip);
+      printf("%s\n", ip_header_info);
+      memcpy(&id, (u_char*)icmphdr+4, 2);
+      memcpy(&seq, (u_char*)icmphdr+6, 2);
+      printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
+      break;
 
       default:
          printf("Src: %s Dst: %s Hdr: %s\n", srcip, dstip, ip_header_info);
    }
-    printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+   printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
 }
+
+/*
+   Function: process_packet
+   Purpose : Called by libpcap to process each packet.
+             Parses the ip packet header, tcp/udp headers and
+             creates a fineline event record, then sends the
+             record to the Pivotal Server or writes it to an
+             event file.
+   Input   : user data pointer is either a socket or file pointer.
+*/
+void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr)
+{
+   struct ip* iphdr;
+   struct icmphdr* icmphdr;
+   struct tcphdr* tcphdr;
+   struct udphdr* udphdr;
+   char ip_header_info[256], srcip[256], dstip[256], event_data[512], temp_data[256];
+   unsigned short id, seq;
+
+   /* Skip the datalink layer header and get the IP header fields. */
+   packetptr += link_header_length;
+   iphdr = (struct ip*)packetptr;
+   strcpy(srcip, inet_ntoa(iphdr->ip_src));
+   strcpy(dstip, inet_ntoa(iphdr->ip_dst));
+   sprintf(ip_header_info, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
+
+   /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
+   packetptr += 4*iphdr->ip_hl;
+   switch (iphdr->ip_p)
+   {
+   case IPPROTO_TCP:
+      tcphdr = (struct tcphdr*)packetptr;
+      sprintf(event_data, "TCP  %s:%d -> %s:%d ", srcip, ntohs(tcphdr->source), dstip, ntohs(tcphdr->dest));
+      sprintf(temp_data, "%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d ",
+               (tcphdr->urg ? 'U' : '*'),
+               (tcphdr->ack ? 'A' : '*'),
+               (tcphdr->psh ? 'P' : '*'),
+               (tcphdr->rst ? 'R' : '*'),
+               (tcphdr->syn ? 'S' : '*'),
+               (tcphdr->fin ? 'F' : '*'),
+               ntohl(tcphdr->seq), ntohl(tcphdr->ack_seq),
+               ntohs(tcphdr->window), 4*tcphdr->doff);
+      strncat(event_data, ip_header_info, strlen(ip_header_info));
+      strncat(event_data, temp_data, strlen(temp_data));
+      break;
+
+   case IPPROTO_UDP:
+      udphdr = (struct udphdr*)packetptr;
+      sprintf(event_data, "UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
+      strncat(event_data, ip_header_info, strlen(ip_header_info));
+      break;
+
+   case IPPROTO_ICMP:
+      icmphdr = (struct icmphdr*)packetptr;
+      sprintf(event_data, "ICMP %s -> %s\n", srcip, dstip);
+      memcpy(&id, (u_char*)icmphdr+4, 2);
+      memcpy(&seq, (u_char*)icmphdr+6, 2);
+      sprintf(temp_data, "Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
+      strncat(event_data, ip_header_info, strlen(ip_header_info));
+      strncat(event_data, temp_data, strlen(temp_data));
+      break;
+
+      default:
+         sprintf(event_data, "Src: %s Dst: %s Hdr: %s\n", srcip, dstip, ip_header_info);
+   }
+
+   /* Now format a Fineline event record. */
+
+   /* Now send event record to the server or write to file. */
+
+   return;
+}
+
 
 void terminate_capture(int signal_number)
 {
-    struct pcap_stat stats;
+   struct pcap_stat stats;
 
-    if (pcap_stats(pcap_device, &stats) >= 0)
-    {
-        printf("%d packets received\n", stats.ps_recv);
-        printf("%d packets dropped\n\n", stats.ps_drop);
-    }
-    pcap_close(pcap_device);
-    exit(0);
+   if (pcap_stats(pcap_device, &stats) >= 0)
+   {
+      printf("%d packets received\n", stats.ps_recv);
+      printf("%d packets dropped\n\n", stats.ps_drop);
+   }
+   pcap_close(pcap_device);
+   exit(0);
 }
 
 /*
