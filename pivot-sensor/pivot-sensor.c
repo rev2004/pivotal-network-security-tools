@@ -65,10 +65,10 @@ int main(int argc, char *argv[])
          }
          else
          {
-            /* Only do layer 3 and above, (and not src localhost) */
-            /* as we will be pushing events to the Pivotal server */
+            /* Only do layer 3 and above and not destination Pivotal Server */
+            /* as we will be pushing events to the Pivotal server           */
             get_ip_address(capture_device, local_ip_address);
-            /* sprintf(bpf_string, "ip and (not host %s)", local_ip_address); */
+            /* sprintf(bpf_string, "ip and (not dst %s)", server_ip_address); */
             strncpy(bpf_string, "ip", 2); /* testing */
             printf("main() Interface: %s IP Address: %s\n", capture_device, local_ip_address);
          }
@@ -114,8 +114,9 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
    memset(pv_event_filename, 0, PV_PATH_MAX_LENGTH);
    memset(server_ip_address, 0, PV_PATH_MAX_LENGTH);
    memset(filter_file, 0, PV_PATH_MAX_LENGTH);
-   strncpy(pv_event_filename, EVENT_FILE, strlen(EVENT_FILE)); /* the default event filename */
+   strncpy(pv_event_filename, EVENT_FILE, strlen(EVENT_FILE)); /* the default event file name */
    strncpy(capture_device, "eth0", 4);
+   strncpy(server_ip_address, "127.0.0.1", 9); /* Default server on the local machine */
 
    if (tlen > 0)
    {

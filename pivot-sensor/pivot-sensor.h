@@ -63,6 +63,7 @@ int show_sensor_help();
 pcap_t* open_pcap_socket(char* device, const char* bpfstr);
 void capture_loop(int packets, pcap_handler func);
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr);
+void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr);
 void terminate_capture(int signal_number);
 int start_capture(char *interface, const char *bpf_string);
 
@@ -97,5 +98,15 @@ pv_ip_record_t *get_last_ip_record();
 int open_tail_pipe(char *log_file_name);
 int start_tail(int pivot_options, int log_option);
 int follow_tail();
+
+/* pveventfile.c */
+
+FILE *open_fineline_event_file(char *evt_file_name);
+int write_fineline_event_record(char *estr);
+int write_fineline_project_header(char *pstr);
+int close_fineline_event_file();
+
+
+
 
 #endif
