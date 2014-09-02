@@ -31,6 +31,11 @@
             consisting of BSD Packet Filter (BPF) rules. See Wireshark User Guide
             or TCPDUMP man page for more info on BPF rules.
 
+            For each packet processed, the source and destination ip is stored
+            in a hashmap and the packet count and data size is accumulated for
+            traffic between the src and dst. These records are then sent to the
+            Pivotal Server every 60 seconds.
+
    Note   : The default filter is (ip and not src localhost). The negative condition
             is required since we will be sending event packets to the Pivot Server,
             so we do not want to enter into the recursive spiral of self-analysis.
@@ -46,6 +51,7 @@
 
 pcap_t* pcap_device;
 int link_header_length;
+int options;
 
 pcap_t* open_pcap_socket(char* device, const char* bpfstr)
 {
@@ -205,8 +211,9 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
    struct icmphdr* icmphdr;
    struct tcphdr* tcphdr;
    struct udphdr* udphdr;
-   char ip_header_info[256], srcip[256], dstip[256], event_data[512], temp_data[256];
+   char ip_header_info[256], srcip[256], dstip[256], event_data[512], temp_data[256], key_value[512];
    unsigned short id, seq;
+   pv_ip_record_t *ip_record;
 
    /* Skip the datalink layer header and get the IP header fields. */
    packetptr += link_header_length;
@@ -222,6 +229,7 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
    case IPPROTO_TCP:
       tcphdr = (struct tcphdr*)packetptr;
       sprintf(event_data, "TCP  %s:%d -> %s:%d ", srcip, ntohs(tcphdr->source), dstip, ntohs(tcphdr->dest));
+      strncpy(key_value, event_data, strlen(event_data));
       sprintf(temp_data, "%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d ",
                (tcphdr->urg ? 'U' : '*'),
                (tcphdr->ack ? 'A' : '*'),
@@ -238,12 +246,14 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
    case IPPROTO_UDP:
       udphdr = (struct udphdr*)packetptr;
       sprintf(event_data, "UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
+      strncpy(key_value, event_data, strlen(event_data));
       strncat(event_data, ip_header_info, strlen(ip_header_info));
       break;
 
    case IPPROTO_ICMP:
       icmphdr = (struct icmphdr*)packetptr;
       sprintf(event_data, "ICMP %s -> %s\n", srcip, dstip);
+      strncpy(key_value, event_data, strlen(event_data));
       memcpy(&id, (u_char*)icmphdr+4, 2);
       memcpy(&seq, (u_char*)icmphdr+6, 2);
       sprintf(temp_data, "Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
@@ -255,9 +265,32 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
          sprintf(event_data, "Src: %s Dst: %s Hdr: %s\n", srcip, dstip, ip_header_info);
    }
 
-   /* Now format a Fineline event record. */
+   /* Update the hashmap stats */
+   if ((ip_record = find_ip(key_value)) != NULL)
+   {
+      ip_record->packet_count++;
+      ip_record->data_size += ntohs(iphdr->ip_len);
+   }
+   else
+   {
+      ip_record = xcalloc(sizeof(pv_ip_record_t));
+      strncpy(ip_record->key_value, key_value, strlen((key_value)));
+      ip_record->data_size = ntohs(iphdr->ip_len);
+      ip_record->packet_count = 1;
+      add_ip(ip_record);
+   }
 
-   /* Now send event record to the server or write to file. */
+   /* Now write a Fineline event record. */
+   if (options & PV_FILE_OUT)
+   {
+      write_fineline_event_record(event_data);
+   }
+
+   /* Now send event record to the server. */
+   if (options & PV_SERVER_OUT)
+   {
+      send_event(event_data);
+   }
 
    return;
 }
@@ -273,26 +306,56 @@ void terminate_capture(int signal_number)
       printf("%d packets dropped\n\n", stats.ps_drop);
    }
    pcap_close(pcap_device);
+
+   if (options & PV_FILE_OUT)
+      close_fineline_event_file();
+
+   if (options & PV_SERVER_OUT)
+      close_socket();
+
    exit(0);
 }
 
 /*
    Function: start_capture
    Purpose : Opens the pcap socket, sets interrupt signals then calls
-             capture_loop() to start packet processing.
-   Input   : Interface and filter strings.
+             capture_loop() to start packet processing. Also opens the
+             event file if logging, opens the tcp socket if sending
+             events to the Pivotal Server.
+   Input   : Interface and filter strings, event file name, server ip address.
    Output  : Returns -1 on error.
 */
-int start_capture(char *interface, const char *bpf_string)
+int start_capture(char *interface, const char *bpf_string, char *event_file, char *server_address, int mode)
 {
    int packets = 0;
+   options = mode;
+
+   if (options & PV_FILE_OUT)
+   {
+      if (open_fineline_event_file(event_file) == NULL)
+      {
+         print_log_entry("start_capture() <ERROR> Could not open event file.\n");
+         return(-1);
+      }
+      write_fineline_project_header("Pivot Sensor Packet Capture Log");
+   }
+
+   if (options & PV_SERVER_OUT)
+   {
+      if (init_socket(server_address) == -1)
+      {
+         print_log_entry("start_capture() <ERROR> Could not init socket.\n");
+         return(-1);
+      }
+   }
 
    if ((pcap_device = open_pcap_socket(interface, bpf_string)) != NULL)
    {
       signal(SIGINT, terminate_capture);
       signal(SIGTERM, terminate_capture);
       signal(SIGQUIT, terminate_capture);
-      capture_loop(packets, (pcap_handler)parse_packet);
+      /* capture_loop(packets, (pcap_handler)parse_packet); */
+      capture_loop(packets, (pcap_handler)process_packet());
       terminate_capture(0);
    }
 

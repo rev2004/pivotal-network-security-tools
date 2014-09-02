@@ -27,6 +27,8 @@
 
    Purpose: Wrapper functions for network sockets.
 
+   TODO: Implement udp socket functions.
+
 */
 
 
