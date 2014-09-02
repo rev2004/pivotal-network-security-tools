@@ -33,7 +33,7 @@
 #include "pvcommon.h"
 #include "pivot-sensor.h"
 
-static unsigned int sensor_id = 0;
+/* TODO: static unsigned int sensor_id = 0; */
 
 int main(int argc, char *argv[])
 {
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
             strncpy(bpf_string, "ip", 2); /* testing */
             printf("main() Interface: %s IP Address: %s\n", capture_device, local_ip_address);
          }
-         start_capture(capture_device, bpf_string);
+         start_capture(capture_device, bpf_string, pv_out_file, server_ip_address, mode);
       }
       else if (mode & PV_UNIFIED2_INPUT)
       {
@@ -118,7 +118,7 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
    strncpy(capture_device, "eth0", 4);
    strncpy(server_ip_address, "127.0.0.1", 9); /* Default server on the local machine */
 
-   if (tlen > 0)
+   if (tlen > 0) /* Build the default event filename, fineline-events-YYYYMMDD-HHMMSS.fle */
    {
       strncat(pv_event_filename, timestr, tlen);
    }

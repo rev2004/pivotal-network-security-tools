@@ -50,6 +50,6 @@ strip:
 	strip pivot-sensor
 
 clean:
-	rm *.o pivot-sensor ../common/*.o
+	rm *.o *.log pivot-sensor ../common/*.o
 
 

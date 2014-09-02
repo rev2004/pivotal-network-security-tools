@@ -65,7 +65,7 @@ void capture_loop(int packets, pcap_handler func);
 void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr);
 void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr);
 void terminate_capture(int signal_number);
-int start_capture(char *interface, const char *bpf_string);
+int start_capture(char *interface, const char *bpf_string, char *event_file, char *server_address, int mode);
 
 /* pvfilter.c */
 

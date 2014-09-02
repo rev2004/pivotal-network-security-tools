@@ -120,10 +120,7 @@ typedef struct pv_url_record pv_url_record_t;
 
 struct pv_ip_record
 {
-   char source_ip_address[256];
-   char source_port[8];
-   char destination_ip_address[256];
-   char destination_port[8];
+   char key_value[512];
    long packet_count;
    long data_size;
    UT_hash_handle hh;
