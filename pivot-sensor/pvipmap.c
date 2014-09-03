@@ -64,35 +64,41 @@ pv_ip_record_t *get_last_ip_record()
    pv_ip_record_t *s = get_first_ip_record();
    if (s != NULL)
       return((pv_ip_record_t *)s->hh.prev);
+
    return(NULL);
 }
 
 void delete_ip(pv_ip_record_t *ip_record)
 {
-    HASH_DEL(ip_map, ip_record);  /* event: pointer to deletee */
-    free(ip_record);
+   HASH_DEL(ip_map, ip_record);  /* event: pointer to deletee */
+   free(ip_record);
 }
 
 void delete_all_ips()
 {
-  pv_ip_record_t *current_ip, *tmp;
+   pv_ip_record_t *current_ip, *tmp;
 
-  HASH_ITER(hh, ip_map, current_ip, tmp)
-  {
-    HASH_DEL(ip_map,current_ip);  /* delete it (ip_map advances to next) */
-    free(current_ip);              /* free it */
-  }
+   HASH_ITER(hh, ip_map, current_ip, tmp)
+   {
+      HASH_DEL(ip_map,current_ip);  /* delete it (ip_map advances to next) */
+      free(current_ip);              /* free it */
+   }
 }
 
 void write_ip_map(FILE *outfile)
 {
-    pv_ip_record_t *s;
+   pv_ip_record_t *s;
+   char out_str[PV_MAX_INPUT_STR];
 
-    for(s=ip_map; s != NULL; s=(pv_ip_record_t *)(s->hh.next))
-    {
-        fputs(s->key_value, outfile);
-        /* TODO: serialize record as Fineline event and write to file. */
-    }
+   fputs("<eventstatistics>\n", outfile);
+   for(s=ip_map; s != NULL; s=(pv_ip_record_t *)(s->hh.next))
+   {
+      sprintf(out_str, "%s Packet Count %ld Data Size %ld\n", s->key_value, s->packet_count, s->data_size);
+      fputs(out_str, outfile);
+   }
+   fputs("</eventstatistics>\n", outfile);
+
+   return;
 }
 
 void send_ip_map()
@@ -103,6 +109,8 @@ void send_ip_map()
       send_event(s->key_value);
         /* TODO: serialize the record as a Fineline event and send to server. */
    }
+
+   return;
 }
 
 void print_ip_map()
@@ -116,5 +124,7 @@ void print_ip_map()
       printf("Data Size: %ld\n", s->data_size);
       printf("--------------------------------------------------------\n");
    }
+
+   return;
 }
 

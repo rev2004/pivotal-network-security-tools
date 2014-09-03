@@ -82,6 +82,7 @@ int write_fineline_event_record(char *estr)
    loctime = localtime (&curtime);
 
    time_str = asctime(loctime);
+   rtrim(time_str);
 
    strcpy(event_string, "<event><id>PVSENSOR</id><evidencenumber>NONE</evidencenumber><time>");
    strcat(event_string, time_str);
@@ -90,8 +91,6 @@ int write_fineline_event_record(char *estr)
    strcat(event_string, "</data><hiddenevent>0</hiddenevent><hiddentext>0</hiddentext><marked>0</marked><pinned>0</pinned><ypos>0</ypos></event>\n");
 
    fputs (event_string, evt_file);
-
-   printf("%s", event_string);
 
    return(0);
 }
@@ -141,4 +140,9 @@ int close_fineline_event_file()
    return(0);
 }
 
+int dump_statistics()
+{
+   write_ip_map(evt_file);
 
+   return(0);
+}
