@@ -215,12 +215,17 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
    unsigned short id, seq;
    pv_ip_record_t *ip_record;
 
+   /* CLEAR THE BUFFERS */
+   memset(event_data, 0, 512);
+   memset(key_value, 0, 512);
+   memset(temp_data, 0, 256);
+
    /* Skip the datalink layer header and get the IP header fields. */
    packetptr += link_header_length;
    iphdr = (struct ip*)packetptr;
    strcpy(srcip, inet_ntoa(iphdr->ip_src));
    strcpy(dstip, inet_ntoa(iphdr->ip_dst));
-   sprintf(ip_header_info, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
+   sprintf(ip_header_info, "ID:%d TOS:0x%x TTL:%d IpLen:%d DgLen:%d ",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
 
    /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
    packetptr += 4*iphdr->ip_hl;
@@ -245,24 +250,26 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
 
    case IPPROTO_UDP:
       udphdr = (struct udphdr*)packetptr;
-      sprintf(event_data, "UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
+      sprintf(event_data, "UDP  %s:%d -> %s:%d ", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
       strncpy(key_value, event_data, strlen(event_data));
       strncat(event_data, ip_header_info, strlen(ip_header_info));
       break;
 
    case IPPROTO_ICMP:
       icmphdr = (struct icmphdr*)packetptr;
-      sprintf(event_data, "ICMP %s -> %s\n", srcip, dstip);
+      sprintf(event_data, "ICMP %s -> %s ", srcip, dstip);
       strncpy(key_value, event_data, strlen(event_data));
       memcpy(&id, (u_char*)icmphdr+4, 2);
       memcpy(&seq, (u_char*)icmphdr+6, 2);
-      sprintf(temp_data, "Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
+      sprintf(temp_data, "Type:%d Code:%d ID:%d Seq:%d ", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
       strncat(event_data, ip_header_info, strlen(ip_header_info));
       strncat(event_data, temp_data, strlen(temp_data));
       break;
 
       default:
-         sprintf(event_data, "Src: %s Dst: %s Hdr: %s\n", srcip, dstip, ip_header_info);
+         sprintf(event_data, "Src: %s Dst: %s Hdr: %s", srcip, dstip, ip_header_info);
+         strncpy(key_value, event_data, strlen(event_data));
+
    }
 
    /* Update the hashmap stats */
@@ -292,6 +299,9 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
       send_event(event_data);
    }
 
+   printf("%s\n", event_data);
+   printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+
    return;
 }
 
@@ -308,10 +318,15 @@ void terminate_capture(int signal_number)
    pcap_close(pcap_device);
 
    if (options & PV_FILE_OUT)
+   {
+      dump_statistics();
       close_fineline_event_file();
+   }
 
    if (options & PV_SERVER_OUT)
       close_socket();
+
+   print_ip_map();
 
    exit(0);
 }
@@ -355,7 +370,7 @@ int start_capture(char *interface, const char *bpf_string, char *event_file, cha
       signal(SIGTERM, terminate_capture);
       signal(SIGQUIT, terminate_capture);
       /* capture_loop(packets, (pcap_handler)parse_packet); */
-      capture_loop(packets, (pcap_handler)process_packet());
+      capture_loop(packets, (pcap_handler)process_packet);
       terminate_capture(0);
    }
 
