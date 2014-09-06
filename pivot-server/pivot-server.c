@@ -17,82 +17,57 @@
 */
 
 /*
-   pivot-sensor.c
+   pivot-server.c
 
-   Title : Pivotal NST Sensor
+   Title : Pivotal NST Server
    Author: Derek Chadwick
    Date  : 06/07/2014
 
-   Purpose: Pivotal Sensor Main Function. Processes command line options
-            and executes packet sniffer mode or Snort/Suricata log follower
-            mode.
+   Purpose: Pivotal Server Main Function. Processes command line options
+            and open a socket to listen for events from the servers or
+            data requests from the GUI.
+
+            Functions:
+            1. Receives event data from the sensor(s).
+            2. Maintains a hashmap of src <-> dst ip connections.
+            3. Does whois lookups of each remote ip address.
+            4. Maintains a hashmap of remote ip <-> domain owner data.
+            5. Maintains traffic statistics for each remote ip.
+            6. Receives data requests from the GUI and returns traffic statistics.
+            7. Receives intrusions alerts from the venom pot.
+            8. Logs events and alerts.
+
+   Status : EXPERIMENTAL - not for use in production networks.
 
 */
 
 
 #include "pvcommon.h"
-#include "pivot-sensor.h"
+#include "pivot-server.h"
 
-/* TODO: static unsigned int sensor_id = 0; */
 
 int main(int argc, char *argv[])
 {
-   char pv_out_file[PV_PATH_MAX_LENGTH];
    char server_ip_address[PV_IP_ADDR_MAX];
-   char filter_file[PV_PATH_MAX_LENGTH];
-   char capture_device[PV_PATH_MAX_LENGTH];
-   char bpf_string[PV_PATH_MAX_LENGTH];
    int mode;
    int res = open_log_file(argv[0]);
 
    if (res < 0)
    {
-      printf("pivot-sensor.c main() <ERROR> Could not open log file.\n");
+      printf("pivot-server.c main() <ERROR> Could not open log file.\n");
       exit(FILE_ERROR);
    }
-   print_log_entry("pivot-sensor.c main() <INFO> Starting Pivotal Sensor 1.0\n");
+   print_log_entry("pivot-server.c main() <INFO> Starting Pivotal Sensor 1.0\n");
 
    mode = parse_command_line_args(argc, argv, capture_device, pv_out_file, server_ip_address, filter_file);
    if (mode > 0)
    {
 
-      if (mode & PV_CAPTURE_INPUT)
-      {
-         if (mode & PV_FILTER_ON)
-         {
-            load_bpf_filters(filter_file, bpf_string);
-         }
-         else
-         {
-            /* Only do layer 3 and above and not destination Pivotal Server */
-            /* as we will be pushing events to the Pivotal server which may */
-            /* may be running on the local machine.                         */
-            if (mode & PV_SERVER_OUT)
-            {
-               sprintf(bpf_string, "ip and not (host %s and port %s)", server_ip_address, SERVER_PORT_STRING);
-            }
-            else
-            {
-               strncpy(bpf_string, "ip", 2); /* Not sending to server, so just filter on layer 3 packets. */
-            }
-         }
-         start_capture(capture_device, bpf_string, pv_out_file, server_ip_address, mode);
-      }
-      else if (mode & PV_UNIFIED2_INPUT)
-      {
-         /* TODO: tail suricata logs (popen("tail")) */
-         printf("TODO: Unified2 log monitoring not implemented.\n");
-      }
-      else
-      {
-         print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options - no capture mode specified!\n");
-         show_sensor_help();
-      }
    }
    else
    {
-      print_log_entry("pivot-sensor.c main() <ERROR> Invalid command line options!\n");
-      show_sensor_help();
+      print_log_entry("pivot-server.c main() <ERROR> Invalid command line options!\n");
+      show_server_help();
    }
 
    close_log_file();
@@ -103,10 +78,10 @@ int main(int argc, char *argv[])
 /*
    Function: parse_command_line_args
    Purpose : Validates command line arguments.
-   Input   : argc, argv, capture interface, server ip and filter file strings.
+   Input   : argc, argv.
    Return  : returns -1 on error, mode of operation on success.
 */
-int parse_command_line_args(int argc, char *argv[], char *capture_device, char *pv_event_filename, char *server_ip_address, char *filter_file)
+int parse_command_line_args(int argc, char *argv[], char *server_address)
 {
    int retval = 0;
    char timestr[100];
@@ -114,12 +89,7 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
 
    tlen = get_time_string(timestr, 99);
 
-   memset(capture_device, 0, PV_PATH_MAX_LENGTH);
-   memset(pv_event_filename, 0, PV_PATH_MAX_LENGTH);
    memset(server_ip_address, 0, PV_PATH_MAX_LENGTH);
-   memset(filter_file, 0, PV_PATH_MAX_LENGTH);
-   strncpy(pv_event_filename, EVENT_FILE, strlen(EVENT_FILE)); /* the default event file name */
-   strncpy(capture_device, "eth0", 4);
    strncpy(server_ip_address, "127.0.0.1", 9); /* Default server on the local machine */
 
    if (tlen > 0) /* Build the default event filename, fineline-events-YYYYMMDD-HHMMSS.fle */
@@ -154,9 +124,9 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
          {
             retval = retval | PV_FILE_OUT; /* Create FineLine event file */
          }
-         else if (strncmp(argv[i], "-s", 2) == 0)
+         else if (strncmp(argv[i], "-g", 2) == 0)
          {
-            retval = retval | PV_SERVER_OUT; /* Send event records to Pivotal server */
+            retval = retval | PV_GUI_OUT; /* Send event records to Pivotal server */
          }
          else if (strncmp(argv[i], "-b", 2) == 0)
          {
@@ -233,10 +203,10 @@ int parse_command_line_args(int argc, char *argv[], char *capture_device, char *
 }
 
 /* help */
-int show_sensor_help()
+int show_server_help()
 {
    printf("\nPivotal NST Sensor 1.0\n\n");
-   printf("Command: pivotal-sensor <options>\n\n");
+   printf("Command: pivotal-server <options>\n\n");
    printf("Capture packets from an interface                 : -c\n");
    printf("Tail a Unified2 event log                         : -t\n");
    printf("Output to a fineline event file                   : -w\n");
@@ -248,7 +218,7 @@ int show_sensor_help()
    printf("\n");
    printf("Input and output files are optional. For sending events to the server\n");
    printf("-a <IPaddress> is mandatory. Minimal command line is:\n\n");
-   printf("sudo pivotal-sensor -w -i wlan0\n\n");
+   printf("sudo pivotal-server -w -i wlan0\n\n");
    printf("This will capture packets on the wlan0 interface and output events into\n");
    printf("a default fineline event file: fineline-events-YYYYMMDD-HHMMSS.fle\n");
    printf("An optional BPF filter list can be included, the default filter\n");

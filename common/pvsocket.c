@@ -59,8 +59,6 @@
 #include "pvcommon.h"
 
 
-#ifdef LINUX_BUILD
-
 /* LINSOCK */
 static int sockfd = 0;
 
@@ -124,7 +122,7 @@ int close_socket()
 }
 
 
-#else
+#ifdef WINSOCK
 
 /* WINSOCK */
 
