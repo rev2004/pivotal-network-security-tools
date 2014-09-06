@@ -146,3 +146,47 @@ int dump_statistics()
 
    return(0);
 }
+
+/*
+   Function: create_event_record()
+
+   Purpose : Creates a Fineline event string from the input data string.
+           :
+   Input   : Event data string.
+   Output  : Timestamped event record.
+*/
+int create_event_record(char *event_string, char *data_string)
+{
+   time_t curtime;
+   struct tm *loctime;
+   char *time_str;
+
+   /* Get the current time. */
+   curtime = time (NULL);
+   loctime = localtime (&curtime);
+
+   time_str = asctime(loctime);
+   rtrim(time_str);
+
+   strcpy(event_string, "<event><id>PVSENSOR</id><evidencenumber>NONE</evidencenumber><time>");
+   strcat(event_string, time_str);
+   strcat(event_string, "</time><type>1</type><summary>Pivot Sensor Packet Event</summary><data>");
+   strncat(event_string, data_string, strlen(data_string));
+   strcat(event_string, "</data><hiddenevent>0</hiddenevent><hiddentext>0</hiddentext><marked>0</marked><pinned>0</pinned><ypos>0</ypos></event>\n");
+
+   return(0);
+}
+
+/*
+   Function: write_event_record()
+
+   Purpose : writes a Fineline event string to the event file.
+           :
+   Input   : Event data string.
+   Output  : Timestamped event record.
+*/
+int write_event_record(char *event_string)
+{
+   fputs(event_string, evt_file);
+   return(0);
+}

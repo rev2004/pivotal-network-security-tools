@@ -61,8 +61,7 @@ int show_sensor_help();
 /* pvsniffer.c */
 
 pcap_t* open_pcap_socket(char* device, const char* bpfstr);
-void capture_loop(int packets, pcap_handler func);
-void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr);
+void start_capture_loop(int packets, pcap_handler func);
 void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr);
 void terminate_capture(int signal_number);
 int start_capture(char *interface, const char *bpf_string, char *event_file, char *server_address, int mode);
@@ -107,6 +106,8 @@ int write_fineline_event_record(char *estr);
 int write_fineline_project_header(char *pstr);
 int close_fineline_event_file();
 int dump_statistics();
+int write_event_record(char *event_string);
+int create_event_record(char *event_string, char *data_string);
 
 
 

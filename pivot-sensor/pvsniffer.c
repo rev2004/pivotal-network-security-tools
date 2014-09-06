@@ -52,6 +52,9 @@
 pcap_t* pcap_device;
 int link_header_length;
 int options;
+struct in_addr server_ipv4_addr;
+unsigned int server_ipv4_port;
+/* TODO: add ipv6 support. */
 
 pcap_t* open_pcap_socket(char* device, const char* bpfstr)
 {
@@ -101,7 +104,7 @@ pcap_t* open_pcap_socket(char* device, const char* bpfstr)
    return pdev;
 }
 
-void capture_loop(int packets, pcap_handler func)
+void start_capture_loop(int packets, pcap_handler func)
 {
    int link_type;
 
@@ -140,61 +143,6 @@ void capture_loop(int packets, pcap_handler func)
    }
 }
 
-void parse_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetptr)
-{
-   struct ip* iphdr;
-   struct icmphdr* icmphdr;
-   struct tcphdr* tcphdr;
-   struct udphdr* udphdr;
-   char ip_header_info[256], srcip[256], dstip[256];
-   unsigned short id, seq;
-
-   /* Skip the datalink layer header and get the IP header fields. */
-   packetptr += link_header_length;
-   iphdr = (struct ip*)packetptr;
-   strcpy(srcip, inet_ntoa(iphdr->ip_src));
-   strcpy(dstip, inet_ntoa(iphdr->ip_dst));
-   sprintf(ip_header_info, "ID:%d TOS:0x%x, TTL:%d IpLen:%d DgLen:%d",ntohs(iphdr->ip_id), iphdr->ip_tos, iphdr->ip_ttl, 4*iphdr->ip_hl, ntohs(iphdr->ip_len));
-
-   /* Advance to the transport layer header then parse and display the fields based on the type of hearder: tcp, udp or icmp. */
-   packetptr += 4*iphdr->ip_hl;
-   switch (iphdr->ip_p)
-   {
-   case IPPROTO_TCP:
-        tcphdr = (struct tcphdr*)packetptr;
-        printf("TCP  %s:%d -> %s:%d\n", srcip, ntohs(tcphdr->source), dstip, ntohs(tcphdr->dest));
-        printf("%s\n", ip_header_info);
-        printf("%c%c%c%c%c%c Seq: 0x%x Ack: 0x%x Win: 0x%x TcpLen: %d\n",
-               (tcphdr->urg ? 'U' : '*'),
-               (tcphdr->ack ? 'A' : '*'),
-               (tcphdr->psh ? 'P' : '*'),
-               (tcphdr->rst ? 'R' : '*'),
-               (tcphdr->syn ? 'S' : '*'),
-               (tcphdr->fin ? 'F' : '*'),
-               ntohl(tcphdr->seq), ntohl(tcphdr->ack_seq),
-               ntohs(tcphdr->window), 4*tcphdr->doff);
-        break;
-
-   case IPPROTO_UDP:
-      udphdr = (struct udphdr*)packetptr;
-      printf("UDP  %s:%d -> %s:%d\n", srcip, ntohs(udphdr->source), dstip, ntohs(udphdr->dest));
-      printf("%s\n", ip_header_info);
-      break;
-
-   case IPPROTO_ICMP:
-      icmphdr = (struct icmphdr*)packetptr;
-      printf("ICMP %s -> %s\n", srcip, dstip);
-      printf("%s\n", ip_header_info);
-      memcpy(&id, (u_char*)icmphdr+4, 2);
-      memcpy(&seq, (u_char*)icmphdr+6, 2);
-      printf("Type:%d Code:%d ID:%d Seq:%d\n", icmphdr->type, icmphdr->code, ntohs(id), ntohs(seq));
-      break;
-
-      default:
-         printf("Src: %s Dst: %s Hdr: %s\n", srcip, dstip, ip_header_info);
-   }
-   printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
-}
 
 /*
    Function: process_packet
@@ -214,11 +162,13 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
    char ip_header_info[256], srcip[256], dstip[256], event_data[512], temp_data[256], key_value[512];
    unsigned short id, seq;
    pv_ip_record_t *ip_record;
+   char fl_event_string[PV_MAX_INPUT_STR];
 
    /* CLEAR THE BUFFERS */
    memset(event_data, 0, 512);
    memset(key_value, 0, 512);
    memset(temp_data, 0, 256);
+   memset(fl_event_string, 0, PV_MAX_INPUT_STR);
 
    /* Skip the datalink layer header and get the IP header fields. */
    packetptr += link_header_length;
@@ -287,20 +237,32 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
       add_ip(ip_record);
    }
 
+   /* Create a Fineline event record string */
+   create_event_record(fl_event_string, event_data);
+
    /* Now write a Fineline event record. */
    if (options & PV_FILE_OUT)
    {
-      write_fineline_event_record(event_data);
+      write_event_record(fl_event_string);
    }
 
-   /* Now send event record to the server. */
+   /*
+      Now send event record to the server if the packet captured was not
+      from us to the server, this is to prevent recursive introspection.
+      Server filtering should already be included in the BPF filters,
+      this is a double check to prevent a packet storm in case the BPF
+      filters are not working or have been omitted.
+   */
    if (options & PV_SERVER_OUT)
    {
-      send_event(event_data);
+      if (!((iphdr->ip_p == IPPROTO_TCP) && (iphdr->ip_dst.s_addr == server_ipv4_addr.s_addr) && (tcphdr->dest == server_ipv4_port)))
+      {
+         send_event(fl_event_string);
+      }
    }
 
    printf("%s\n", event_data);
-   printf("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n");
+   printf("------------------------------------------------------------\n\n");
 
    return;
 }
@@ -342,8 +304,20 @@ void terminate_capture(int signal_number)
 */
 int start_capture(char *interface, const char *bpf_string, char *event_file, char *server_address, int mode)
 {
+   char local_ip_address[PV_IP_ADDR_MAX];
    int packets = 0;
+
    options = mode;
+   memset(local_ip_address, 0, PV_IP_ADDR_MAX);
+   get_ip_address(interface, local_ip_address);
+   printf("start_capture() Interface: %s IP Address: %s\n", interface, local_ip_address);
+
+   if (inet_aton(server_address, &server_ipv4_addr) == 0)
+   {
+      print_log_entry("start_capture() <ERROR> Invalide server IPv4 address.\n");
+      return(-1);
+   }
+   server_ipv4_port = htons(atoi(SERVER_PORT_STRING));
 
    if (options & PV_FILE_OUT)
    {
@@ -369,8 +343,7 @@ int start_capture(char *interface, const char *bpf_string, char *event_file, cha
       signal(SIGINT, terminate_capture);
       signal(SIGTERM, terminate_capture);
       signal(SIGQUIT, terminate_capture);
-      /* capture_loop(packets, (pcap_handler)parse_packet); */
-      capture_loop(packets, (pcap_handler)process_packet);
+      start_capture_loop(packets, (pcap_handler)process_packet);
       terminate_capture(0);
    }
 
