@@ -1,46 +1,36 @@
 # Pivotal Network Security Tools
 # Derek Chadwick 06/07/2014
-# Builds Linux version of Pivotal GUI.
+# Builds Linux version of Pivotal Server.
 
 # Compiler flags
 
 CC=gcc
-CFLAGS=-c -Wall -ansi
+CFLAGS=-c -Wall -ansi -D_GNU_SOURCE
 
 # Linker flags
 
 LDFLAGS=-static
-LIBS=-lpcap
+LIBS=
 LIBDIRS=-L../../libs
 
 # Sources
 
-SOURCES=fineline.c \
-fllog.c \
-flutil.c \
-fleventparser.c \
-fleventfile.c \
-fleventhashmap.c \
-flevt.c \
-flevtx.c \
-flfiltermap.c \
-flwineventhashmap.c \
-flsocket.c
+SOURCES=pivot-server.c \
+../common/pvlog.c \
+../common/pvutil.c \
+../common/pveventfile.c \
+../common/pvsocket.c \
+../common/pvipmap.c
 
 # Objects
 
 OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=pivotal-gui
+EXECUTABLE=pivot-server
 
 # Includes
 
-INCPREFIX=../../libs/libevtx-20131211
-INCLUDES=-I$(INCPREFIX)/include \
--I$(INCPREFIX)/common \
--I$(INCPREFIX)/libfdatetime \
--I$(INCPREFIX)/libcerror \
--I$(INCPREFIX)/libcstring \
--I../common
+INCPREFIX=
+INCLUDES=-I../common
 
 # Target Rules
 
@@ -53,9 +43,9 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $(INCLUDES) -DLINUX_BUILD $< -o $@
 
 strip:
-	strip pivotal-gui
+	strip pivot-server
 
 clean:
-	rm *.o pivotal-gui
+	rm *.o pivot-server ../common/*.o
 
 
