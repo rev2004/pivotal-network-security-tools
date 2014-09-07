@@ -155,6 +155,7 @@ char *get_response();
 int close_socket();
 
 /* pvlog.c */
+
 int open_log_file(char *startup_path);
 int print_log_entry(char *estr);
 int sprint_log_entry(char *estr, char *eval);

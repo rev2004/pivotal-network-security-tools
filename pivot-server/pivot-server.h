@@ -33,8 +33,8 @@
    Constant Definitions
 */
 
-#ifndef PIVOTAL_SENSOR_H
-#define PIVOTAL_SENSOR_H
+#ifndef PIVOTAL_SERVER_H
+#define PIVOTAL_SERVER_H
 
 
 #include <stdio.h>

@@ -24,7 +24,7 @@
    Date  : 06/07/2014
 
    Purpose: Pivotal Server Main Function. Processes command line options
-            and open a socket to listen for events from the servers or
+            and opens a socket to listen for events from the sensors or
             data requests from the GUI.
 
             Functions:
@@ -45,6 +45,7 @@
 #include "pvcommon.h"
 #include "pivot-server.h"
 
+char source_file[20] = "pivot-server.c ";
 
 int main(int argc, char *argv[])
 {
@@ -87,7 +88,7 @@ int parse_command_line_args(int argc, char *argv[], char *event_filename)
    char timestr[100];
    int tlen;
 
-   tlen = get_time_string(timestr, 99);
+   tlen = get_time_string(timestr, 100);
 
    if (tlen > 0) /* Build the default event filename, pivotal-events-YYYYMMDD-HHMMSS.fle */
    {
