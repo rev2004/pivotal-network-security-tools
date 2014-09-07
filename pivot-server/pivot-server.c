@@ -48,7 +48,7 @@
 
 int main(int argc, char *argv[])
 {
-   char server_ip_address[PV_IP_ADDR_MAX];
+   char event_file[PV_MAX_INPUT_STR];
    int mode;
    int res = open_log_file(argv[0]);
 
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
    }
    print_log_entry("pivot-server.c main() <INFO> Starting Pivotal Sensor 1.0\n");
 
-   mode = parse_command_line_args(argc, argv, capture_device, pv_out_file, server_ip_address, filter_file);
+   mode = parse_command_line_args(argc, argv, event_file);
    if (mode > 0)
    {
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
    Input   : argc, argv.
    Return  : returns -1 on error, mode of operation on success.
 */
-int parse_command_line_args(int argc, char *argv[], char *server_address)
+int parse_command_line_args(int argc, char *argv[], char *event_filename)
 {
    int retval = 0;
    char timestr[100];
@@ -89,18 +89,16 @@ int parse_command_line_args(int argc, char *argv[], char *server_address)
 
    tlen = get_time_string(timestr, 99);
 
-   memset(server_ip_address, 0, PV_PATH_MAX_LENGTH);
-   strncpy(server_ip_address, "127.0.0.1", 9); /* Default server on the local machine */
-
-   if (tlen > 0) /* Build the default event filename, fineline-events-YYYYMMDD-HHMMSS.fle */
+   if (tlen > 0) /* Build the default event filename, pivotal-events-YYYYMMDD-HHMMSS.fle */
    {
-      strncat(pv_event_filename, timestr, tlen);
+      strncpy(event_filename, EVENT_FILE, strlen(EVENT_FILE));
+      strncat(event_filename, timestr, tlen);
    }
    else
    {
       print_log_entry("parse_command_line_args() <WARNING> Invalid time string.\n");
    }
-   strncat(pv_event_filename, EVENT_FILE_EXT, 4);
+   strncat(event_filename, EVENT_FILE_EXT, 4);
 
    if (argc < 2)
    {
@@ -138,7 +136,7 @@ int parse_command_line_args(int argc, char *argv[], char *server_address)
             if ((i+1) < argc)
             {
                printf("parse_command_line_args() <INFO> FineLine event file: %s\n", argv[i+1]);
-               strncpy(pv_event_filename, argv[i+1], strlen(argv[i+1]));
+               strncpy(event_filename, argv[i+1], strlen(argv[i+1]));
             }
             else
             {
@@ -151,8 +149,7 @@ int parse_command_line_args(int argc, char *argv[], char *server_address)
             /* Network interface for packet capture */
             if ((i+1) < argc)
             {
-               printf("parse_command_line_args() <INFO> Network interface: %s\n", argv[i+1]);
-               strncpy(capture_device, argv[i+1], strlen(argv[i+1]));
+               printf("parse_command_line_args() <INFO> Interface: %s\n", argv[i+1]);
             }
             else
             {
@@ -166,12 +163,6 @@ int parse_command_line_args(int argc, char *argv[], char *server_address)
 			   {
 			      /* IP address of the Pivotal NST Server. */
 			      printf("parse_command_line_args() <INFO> Server IP address: %s\n", argv[i+1]);
-               strncpy(server_ip_address, argv[i+1], strlen(argv[i+1]));
-			      if (validate_ipv4_address(server_ip_address) < 0)
-			      {
-				      print_log_entry("parse_command_line_args() <ERROR> Invalid IPv4 address.\n");
-                  return(-1);
-			      }
 			   }
 			   else
 			   {
@@ -185,8 +176,6 @@ int parse_command_line_args(int argc, char *argv[], char *server_address)
             if ((i+1) < argc)
             {
                printf("parse_command_line_args() <INFO> Filter file: %s\n", argv[i+1]);
-               strncpy(filter_file, argv[i+1], strlen(argv[i+1]));
-			      retval = retval | PV_FILTER_ON;
             }
             else
             {
@@ -202,10 +191,10 @@ int parse_command_line_args(int argc, char *argv[], char *server_address)
    return(retval);
 }
 
-/* help */
+/* TODO: help */
 int show_server_help()
 {
-   printf("\nPivotal NST Sensor 1.0\n\n");
+   printf("\nPivotal NST Server 1.0\n\n");
    printf("Command: pivotal-server <options>\n\n");
    printf("Capture packets from an interface                 : -c\n");
    printf("Tail a Unified2 event log                         : -t\n");

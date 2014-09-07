@@ -19,11 +19,11 @@ SOURCES=pivot-sensor.c \
 pvsniffer.c \
 pvfilter.c  \
 pvurlmap.c  \
-pvipmap.c   \
 pvtail.c    \
-pveventfile.c \
-../common/pvlog.c \
-../common/pvutil.c \
+../common/pvipmap.c     \
+../common/pveventfile.c \
+../common/pvlog.c       \
+../common/pvutil.c      \
 ../common/pvsocket.c
 
 # Objects

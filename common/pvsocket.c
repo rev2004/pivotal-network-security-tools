@@ -124,7 +124,7 @@ int close_socket()
 
 #ifdef WINSOCK
 
-/* WINSOCK */
+/* WINSOCK - DEPRECATED */
 
 static SOCKET connect_socket = INVALID_SOCKET;
 

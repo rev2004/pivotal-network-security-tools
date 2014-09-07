@@ -37,6 +37,8 @@
 #define PIVOTAL_COMMON_H
 
 #include <stddef.h>
+#include <stdio.h>
+
 #include "uthash.h"
 
 #define DEBUG 1
@@ -158,6 +160,28 @@ int print_log_entry(char *estr);
 int sprint_log_entry(char *estr, char *eval);
 int iprint_log_entry(char *estr, int ival);
 int close_log_file();
+
+/* pveventfile.c */
+
+FILE *open_fineline_event_file(char *evt_file_name);
+int write_fineline_event_record(char *estr);
+int write_fineline_project_header(char *pstr);
+int close_fineline_event_file();
+int dump_statistics();
+int write_event_record(char *event_string);
+int create_event_record(char *event_string, char *data_string);
+
+/* pvipmap.c */
+
+void add_ip(pv_ip_record_t *flip);
+pv_ip_record_t *find_ip(char *lookup_string);
+void write_ip_map(FILE *outfile);
+void send_ip_map();
+void print_ip_map();
+void delete_ip(pv_ip_record_t *ip_record);
+void delete_all_ips();
+pv_ip_record_t *get_first_ip_record();
+pv_ip_record_t *get_last_ip_record();
 
 
 #endif
