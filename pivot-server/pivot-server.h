@@ -58,6 +58,9 @@
 int parse_command_line_args(int argc, char *argv[], char *event_filename);
 int show_server_help();
 
+/* pvconnection.c */
+
+void *sensor_connection_handler(void *socket_desc);
 
 
 #endif

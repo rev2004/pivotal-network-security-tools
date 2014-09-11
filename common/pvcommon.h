@@ -44,7 +44,7 @@
 #define DEBUG 1
 
 #define SERVER_PORT_STRING "59888"
-
+#define PV_SERVER_PORT 59888
 #define PV_PATH_MAX_LENGTH 4096 /* Redefine max path length since limits.h does weird things! FLTK defines this = 2048 */
 #define PV_MAX_INPUT_STR 4096
 #define PV_IP_ADDR_MAX 128
@@ -130,6 +130,18 @@ struct pv_ip_record
 
 typedef struct pv_ip_record pv_ip_record_t;
 
+struct pv_sensor_connection
+{
+   int sockfd;
+   int sensor_id;
+   int status;
+   unsigned int event_count;
+   unsigned int alert_count;
+   UT_hash_handle hh;
+};
+
+typedef struct pv_sensor_connection pv_sensor_connection_t;
+
 /* pvutil.c */
 
 int fatal(char *str);
@@ -149,10 +161,12 @@ char *trim(char *s);
 
 /* pvsocket.c */
 
-int init_socket(char *gui_ip_address);
-int send_event(char *event_string);
-char *get_response();
-int close_socket();
+int init_client_socket(char *server_ip_address);
+int init_server_socket(int port_number, void *(* connector)(void *));
+int send_event(int sockfd, char *event_string);
+char *get_response(int sockfd, char *in_buffer);
+int close_socket(int sockfd);
+void *connection_handler(void *socket_desc);
 
 /* pvlog.c */
 
@@ -177,12 +191,14 @@ int create_event_record(char *event_string, char *data_string);
 void add_ip(pv_ip_record_t *flip);
 pv_ip_record_t *find_ip(char *lookup_string);
 void write_ip_map(FILE *outfile);
-void send_ip_map();
+void send_ip_map(int sock_desc);
 void print_ip_map();
 void delete_ip(pv_ip_record_t *ip_record);
 void delete_all_ips();
 pv_ip_record_t *get_first_ip_record();
 pv_ip_record_t *get_last_ip_record();
+
+
 
 
 #endif
