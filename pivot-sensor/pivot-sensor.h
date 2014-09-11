@@ -75,7 +75,7 @@ int load_bpf_filters(char *filter_filename, char *filter_string);
 void add_url(pv_url_record_t *flurl);
 pv_url_record_t *find_url(char *lookup_string);
 void write_url_map(FILE *outfile);
-void send_url_map();
+void send_url_map(int sock_desc);
 void delete_url(pv_url_record_t *url_record);
 void delete_all_urls();
 pv_url_record_t *get_first_url_record();

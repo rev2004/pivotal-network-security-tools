@@ -100,12 +100,12 @@ void write_ip_map(FILE *outfile)
    return;
 }
 
-void send_ip_map()
+void send_ip_map(int sock_desc)
 {
    pv_ip_record_t *s;
 
    for(s=ip_map; s != NULL; s=(pv_ip_record_t *)(s->hh.next))   {
-      send_event(s->key_value);
+      send_event(sock_desc, s->key_value);
         /* TODO: serialize the record as a Fineline event and send to server. */
    }
 

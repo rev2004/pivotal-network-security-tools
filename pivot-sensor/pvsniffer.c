@@ -51,6 +51,7 @@
 
 pcap_t* pcap_device;
 int link_header_length;
+int socket_desc;
 int options;
 struct in_addr server_ipv4_addr;
 unsigned int server_ipv4_port;
@@ -257,7 +258,7 @@ void process_packet(u_char *user, struct pcap_pkthdr *packethdr, u_char *packetp
    {
       if (!((iphdr->ip_p == IPPROTO_TCP) && (iphdr->ip_dst.s_addr == server_ipv4_addr.s_addr) && (tcphdr->dest == server_ipv4_port)))
       {
-         send_event(fl_event_string);
+         send_event(socket_desc, fl_event_string);
       }
    }
 
@@ -286,7 +287,7 @@ void terminate_capture(int signal_number)
    }
 
    if (options & PV_SERVER_OUT)
-      close_socket();
+      close_socket(socket_desc);
 
    print_ip_map();
 
@@ -317,7 +318,7 @@ int start_capture(char *interface, const char *bpf_string, char *event_file, cha
       print_log_entry("start_capture() <ERROR> Invalide server IPv4 address.\n");
       return(-1);
    }
-   server_ipv4_port = htons(atoi(SERVER_PORT_STRING));
+   server_ipv4_port = htons(PV_SERVER_PORT);
 
    if (options & PV_FILE_OUT)
    {
@@ -331,7 +332,7 @@ int start_capture(char *interface, const char *bpf_string, char *event_file, cha
 
    if (options & PV_SERVER_OUT)
    {
-      if (init_socket(server_address) == -1)
+      if ((socket_desc = init_client_socket(server_address)) == -1)
       {
          print_log_entry("start_capture() <ERROR> Could not init socket.\n");
          return(-1);

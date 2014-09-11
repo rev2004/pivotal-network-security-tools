@@ -25,7 +25,9 @@
 
    Purpose: Pivotal Server Main Function. Processes command line options
             and opens a socket to listen for events from the sensors or
-            data requests from the GUI.
+            data requests from the GUI. For each connection from a sensor
+            a posix thread is spawned to process event packets sent by
+            the sensor.
 
             Functions:
             1. Receives event data from the sensor(s).
@@ -63,7 +65,7 @@ int main(int argc, char *argv[])
    mode = parse_command_line_args(argc, argv, event_file);
    if (mode > 0)
    {
-
+      init_server_socket(PV_SERVER_PORT, sensor_connection_handler);
    }
    else
    {

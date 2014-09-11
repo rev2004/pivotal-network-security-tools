@@ -94,12 +94,12 @@ void write_url_map(FILE *outfile)
     }
 }
 
-void send_url_map()
+void send_url_map(int sock_desc)
 {
     pv_url_record_t *s;
 
     for(s=url_map; s != NULL; s=(pv_url_record_t *)(s->hh.next))    {
-        send_event(s->url_record_string);
+        send_event(sock_desc, s->url_record_string);
     }
 }
 

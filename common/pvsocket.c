@@ -25,15 +25,16 @@
    Author: Derek Chadwick
    Date  : 06/07/2014
 
-   Purpose: Wrapper functions for network sockets.
+   Purpose: Wrapper functions for network client and server sockets for TCP and UDP
+            communications.
 
    TODO: Implement udp socket functions.
 
 */
 
 
-#ifdef LINUX_BUILD
-
+#include <stdlib.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -42,62 +43,115 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
-
-#else
-
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-
-#endif
-
-#include <stdlib.h>
-#include <stdio.h>
+#include <pthread.h>
 
 #include "pvcommon.h"
 
 
-/* LINSOCK */
-static int sockfd = 0;
-
 /*
-   Function: init_socket
+   Function: init_client_socket
    Purpose : initialises a Linux/BSD socket.
    Input   : string containing the GUI IP address.
    Return  : A valid socket = success, -1 = fail.
 */
-int init_socket(char *gui_ip_address)
+int init_client_socket(char *server_ip_address)
 {
-    struct sockaddr_in serv_addr;
+   int sockfd;
+   struct sockaddr_in serv_addr;
 
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        print_log_entry("init_socket() <ERROR> Could not create socket \n");
-        return(-1);
-    }
+   if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+   {
+      print_log_entry("init_socket() <ERROR> Could not create socket.\n");
+      return(-1);
+   }
 
-    memset(&serv_addr, '0', sizeof(serv_addr));
+   memset(&serv_addr, '0', sizeof(serv_addr));
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(atoi(SERVER_PORT_STRING));
+   serv_addr.sin_family = AF_INET;
+   serv_addr.sin_port = htons(PV_SERVER_PORT);
 
-    if(inet_pton(AF_INET, gui_ip_address, &serv_addr.sin_addr)<=0)
-    {
-        print_log_entry("init_socket() <ERROR> inet_pton error occured\n");
-        return(-1);
-    }
+   if(inet_pton(AF_INET, server_ip_address, &serv_addr.sin_addr)<=0)
+   {
+      print_log_entry("init_socket() <ERROR> inet_pton error occurred.\n");
+      return(-1);
+   }
 
-    if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-       printf("init_socket() <ERROR> Connect Failed \n");
-       return(-1);
-    }
-    return(0);
+   if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+   {
+      printf("init_socket() <ERROR> Connect Failed.\n");
+      return(-1);
+   }
+   return(sockfd);
 }
 
-int send_event(char *event_string)
+/*
+   Function: init_server_socket
+   Purpose : initialises a server TCP socket and spawns a thread to handle
+             each new connection.
+   Input   : TCP port number, handler function.
+   Return  : 0 = success, -1 = fail.
+*/
+int init_server_socket(int port_number, void *(* connector)(void *))
+{
+   int sockfd, new_sock, sock_size, *new_sock_p;
+   struct sockaddr_in server_addr, client_addr;
+   pthread_t server_thread;
+   char message[PV_MAX_INPUT_STR];
+
+   if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+   {
+      print_log_entry("init_server_socket() <ERROR> Could not create socket.\n");
+      return(-1);
+   }
+
+   sock_size = sizeof(struct sockaddr_in);
+   memset(&server_addr, '0', sock_size);
+   memset(&client_addr, '0', sock_size);
+
+   server_addr.sin_family = AF_INET;
+   server_addr.sin_addr.s_addr = INADDR_ANY;
+   server_addr.sin_port = htons(PV_SERVER_PORT);
+
+   if(bind(sockfd, (struct sockaddr *)&server_addr, sock_size) < 0)
+   {
+      print_log_entry("init_server_socket() <ERROR> Could not bind socket.\n");
+      return 1;
+   }
+
+   listen(sockfd , 3);
+
+   print_log_entry("init_server_socket() <INFO> Waiting for incoming connections...\n");
+
+   while((new_sock = accept(sockfd, (struct sockaddr *)&client_addr, (socklen_t*)&sock_size)))
+   {
+      print_log_entry("init_server_socket() <INFO> Connection accepted.\n");
+
+      /* DEBUG */
+      strcpy(message, "Hello Client , I have received your connection. And now I will assign a handler for you.");
+      write(new_sock, message, strlen(message));
+
+      new_sock_p = malloc(1);
+      *new_sock_p = new_sock;
+
+      if(pthread_create(&server_thread, NULL, connector, (void*)new_sock_p) < 0)
+      {
+         print_log_entry("init_server_socket() <ERROR> Could not create thread.\n");
+         return(-1);
+      }
+
+      memset(&client_addr, '0', sock_size);
+   }
+
+   if (new_sock < 0)
+   {
+      perror("accept failed");
+      return(-1);
+   }
+
+   return(0);
+}
+
+int send_event(int sockfd, char *event_string)
 {
    int k;
    k = send(sockfd, event_string, strlen(event_string), 0);
@@ -110,143 +164,46 @@ int send_event(char *event_string)
 }
 
 /* TODO: protocol not fully specified yet */
-char *get_response()
+char *get_response(int sockfd, char *in_buffer)
 {
    return(NULL);
 }
 
-int close_socket()
+int close_socket(int sockfd)
 {
    close(sockfd);
    return(0);
 }
 
-
-#ifdef WINSOCK
-
-/* WINSOCK - DEPRECATED */
-
-static SOCKET connect_socket = INVALID_SOCKET;
-
-/*
-   Function: init_socket
-   Purpose : initialises a WINSOCK socket.
-   Input   : string containing the GUI IP address.
-   Return  : A valid socket = success, INVALID_SOCKET = fail.
-*/
-int init_socket(char *gui_ip_address)
+/* DEBUG */
+void *connection_handler(void *socket_desc)
 {
-    WSADATA wsaData;
-    struct addrinfo *resultaddrinfo = NULL, *ptr = NULL, hints;
-    char *sendbuf = NULL;
-    int result;
+   int sock = *(int*)socket_desc;
+   int read_size;
+   char client_message[PV_MAX_INPUT_STR];
 
-    result = WSAStartup(MAKEWORD(2,2), &wsaData);
-    if (result != 0)
-	 {
-        print_log_entry("init_socket() <ERROR> WSAStartup failed with error.\n");
-        return(-1);
-    }
+   strcpy(client_message, "Greetings! I am your connection handler\n");
+   write(sock , client_message , strlen(client_message));
 
-    ZeroMemory( &hints, sizeof(hints) );
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+   memset(client_message, 0, PV_MAX_INPUT_STR);
 
-    /* Resolve the server address and port NOTE* getaddrinfo is in ws2_32.lib not in the old wsock32.lib */
-    result = getaddrinfo(gui_ip_address, GUI_SERVER_PORT_STRING, &hints, &resultaddrinfo);
-    if (result != 0)
-    {
-        print_log_entry("init_socket() <ERROR> getaddrinfo failed with error.\n");
-        WSACleanup();
-        return(-1);
-    }
+   while((read_size = recv(sock , client_message , PV_MAX_INPUT_STR , 0)) > 0 )
+   {
+      write(sock , client_message , strlen(client_message));
+   }
 
-    /* Attempt to connect to an address until one succeeds */
-    for(ptr=resultaddrinfo; ptr != NULL ;ptr=ptr->ai_next)
-    {
+   if(read_size == 0)
+   {
+      puts("Client disconnected");
+      fflush(stdout);
+   }
+   else if(read_size == -1)
+   {
+      perror("recv failed");
+   }
 
-        /* Create a SOCKET for connecting to server */
-        connect_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-        if (connect_socket == INVALID_SOCKET)
-        {
-            print_log_entry("init_socket() <ERROR> socket failed with error.\n");
-            WSACleanup();
-            return(INVALID_SOCKET);
-        }
+   free(socket_desc);
 
-        /* Connect to server. */
-        result = connect( connect_socket, ptr->ai_addr, (int)ptr->ai_addrlen);
-        if (result == SOCKET_ERROR)
-        {
-            closesocket(connect_socket);
-            connect_socket = INVALID_SOCKET;
-            continue;
-        }
-        break;
-    }
-
-    freeaddrinfo(resultaddrinfo);
-
-    if (connect_socket == INVALID_SOCKET)
-    {
-        print_log_entry("init_socket() <ERROR> Unable to connect to server!\n");
-        WSACleanup();
-        return(-1);
-    }
-
-    return(0);
-
-}
-
-
-/*
-   Function: send_event
-   Purpose : sends the string to the GUI.
-   Input   : socket, event record string.
-   Return  : 0 = success, -1 = fail.
-*/
-int send_event(char *event_string)
-{
-   int result;
-
-    result = send(connect_socket, event_string, (int)strlen(event_string), 0);
-    if (result == SOCKET_ERROR)
-    {
-        print_log_entry("send_event() <ERROR> Send failed with error.\n");
-        closesocket(connect_socket);
-        WSACleanup();
-        return(-1);
-    }
-	printf("send_event() <INFO> Sent event record %s\n", event_string);
-
-	return(0);
-}
-
-/* TODO: acknowledge from server */
-char *get_response()
-{
-   char *resp = (char *)xcalloc(FL_MAX_INPUT_STR);
-   int result;
-
-   result = recv(connect_socket, resp, FL_MAX_INPUT_STR, 0);
-   if (result > 0)
-        printf("get_response() <INFO> Bytes received: %d\n", result);
-   else if (result == 0)
-        printf("get_response() <ERROR> Connection closed\n");
-   else
-        printf("get_response() <ERROR> recv failed with error: %d\n", WSAGetLastError());
-
-   return(resp);
-}
-
-int close_socket()
-{
-   closesocket(connect_socket);
-   WSACleanup();
    return(0);
 }
-
-
-#endif /* WINSOCK */
 

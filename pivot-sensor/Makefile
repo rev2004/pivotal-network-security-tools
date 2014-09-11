@@ -10,7 +10,7 @@ CFLAGS=-c -Wall -ansi -DLINUX_BUILD -D_GNU_SOURCE
 # Linker flags
 
 LDFLAGS=
-LIBS=-lpcap
+LIBS=-lpcap -lpthread
 LIBDIRS=-L../../libs
 
 # Sources

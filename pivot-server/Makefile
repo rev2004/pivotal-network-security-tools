@@ -10,12 +10,13 @@ CFLAGS=-c -Wall -ansi -D_GNU_SOURCE
 # Linker flags
 
 LDFLAGS=-static
-LIBS=
+LIBS=-lpthread
 LIBDIRS=-L../../libs
 
 # Sources
 
 SOURCES=pivot-server.c \
+pvconnection.c \
 ../common/pvlog.c \
 ../common/pvutil.c \
 ../common/pveventfile.c \
