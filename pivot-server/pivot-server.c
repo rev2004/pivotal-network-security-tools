@@ -47,7 +47,7 @@
 #include "pvcommon.h"
 #include "pivot-server.h"
 
-char source_file[20] = "pivot-server.c ";
+char source_file[20] = "pivot-server.c";
 
 int main(int argc, char *argv[])
 {

@@ -25,7 +25,9 @@
 
    Purpose: Implements functions for handling packets sent by sensors.
             For each connection from a sensor a posix thread is spawned to process
-            event packets sent by the sensor.
+            event packets sent by the sensor. The connection handler logs all
+            messages received from the sensor and updates the statistics hashmap
+            for traffic to remote IP addresses.
 
 
    Status : EXPERIMENTAL - not for use in production networks.
@@ -36,37 +38,92 @@
 #include "pvcommon.h"
 #include "pivot-server.h"
 
-char pvconnection_source_file[20] = "pvconnection.c ";
+char pvconnection_source_file[20] = "pvconnection.c";
 
+/*
+   Function: sensor_connection_handler
+   Purpose : Called by the posix thread, opens sensor log file then
+             loops on the socket recv command, logs messages received
+             from the sensor and updates the IP statistics hash map.
+   Input   : Socket descriptor.
+   Return  : returns NULL.
+*/
 void *sensor_connection_handler(void *socket_desc)
 {
    int sock = *(int*)socket_desc;
-   int read_size;
-   char client_message[PV_MAX_INPUT_STR];
+   int read_size, tlen;
+   char timestr[100];
+   char sensor_message[PV_MAX_INPUT_STR];
+   char event_filename[PV_MAX_INPUT_STR];
+   FILE *sensor_log;
 
-   strcpy(client_message, "Greetings! I am your connection handler\n");
-   write(sock , client_message , strlen(client_message));
+   print_log_entry("sensor_connection_handler() <INFO> Connection handler starting.\n");
 
-   memset(client_message, 0, PV_MAX_INPUT_STR);
+   memset(sensor_message, 0, PV_MAX_INPUT_STR);
 
-   while((read_size = recv(sock , client_message , PV_MAX_INPUT_STR , 0)) > 0 )
+   /*
+      Read the first message from the sensor, extract the sensor ID from the message
+      and open the log file. A separate log file is maintained for each sensor.
+      The file format is plain text Fineline Event format ->
+
+      https://code.google.com/p/fineline-computer-forensics-timeline-tools/
+
+      The log file name format is: SID0000-YYYYMMDD-HHMMSS.fle
+
+   */
+
+   if ((read_size = recv(sock, sensor_message, PV_MAX_INPUT_STR, 0)) > 0)
    {
-      write(sock , client_message , strlen(client_message));
-      memset(client_message, 0, PV_MAX_INPUT_STR);
+
+      tlen = get_time_string(timestr, 100);
+
+      if (tlen > 0) /* Build the default event filename, SID0000-YYYYMMDD-HHMMSS.fle */
+      {
+         TODO:
+         strncpy(event_filename, EVENT_FILE, strlen(EVENT_FILE));
+         strncat(event_filename, timestr, tlen);
+      }
+      else
+      {
+         print_log_entry("sensor_connection_handler() <WARNING> Invalid time string.\n");
+      }
+      strncat(event_filename, EVENT_FILE_EXT, 4);
+
+      sensor_log = open_sensor_log_file(event_filename);
+      if (sensor_log == NULL)
+      {
+         TODO:
+      }
+
+   }
+   else
+   {
+      print_log_entry("sensor_connection_handler() <ERROR> Sensor receive failed.\n");
+      return(NULL);
+   }
+
+
+   /*
+      Start the receive loop, only exit receive error or sensor disconnect.
+   */
+
+   while((read_size = recv(sock, sensor_message, PV_MAX_INPUT_STR, 0)) > 0 )
+   {
+      write(sock, sensor_message ,strlen(sensor_message));
+      memset(sensor_message, 0, PV_MAX_INPUT_STR);
    }
 
    if(read_size == 0)
    {
-      puts("Client disconnected");
-      fflush(stdout);
+      print_log_entry("sensor_connection_handler() <INFO> Sensor disconnected.\n");
    }
    else if(read_size == -1)
    {
-      perror("recv failed");
+      print_log_entry("sensor_connection_handler() <ERROR> Sensor receive failed.\n");
    }
 
    free(socket_desc);
 
-   return(0);
+   return(NULL);
 }
 

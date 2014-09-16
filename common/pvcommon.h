@@ -186,6 +186,13 @@ int dump_statistics();
 int write_event_record(char *event_string);
 int create_event_record(char *event_string, char *data_string);
 
+/* pveventlog.c */
+
+FILE *open_sensor_log_file(char *evt_file_name);
+int write_sensor_log_record(FILE *evt_file, char *estr);
+int write_project_header(FILE *evt_file, char *pstr);
+int close_sensor_log_file(FILE* evt_file);
+
 /* pvipmap.c */
 
 void add_ip(pv_ip_record_t *flip);
