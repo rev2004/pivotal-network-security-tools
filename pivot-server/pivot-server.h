@@ -61,6 +61,6 @@ int show_server_help();
 /* pvconnection.c */
 
 void *sensor_connection_handler(void *socket_desc);
-
+void get_sensor_id(char *msg, char *sid);
 
 #endif

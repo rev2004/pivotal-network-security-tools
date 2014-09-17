@@ -53,13 +53,18 @@ void *sensor_connection_handler(void *socket_desc)
    int sock = *(int*)socket_desc;
    int read_size, tlen;
    char timestr[100];
+   char sensor_id[100];
    char sensor_message[PV_MAX_INPUT_STR];
    char event_filename[PV_MAX_INPUT_STR];
    FILE *sensor_log;
 
    print_log_entry("sensor_connection_handler() <INFO> Connection handler starting.\n");
 
+   /* !!!CLEAR THE BUFFERS!!! */
    memset(sensor_message, 0, PV_MAX_INPUT_STR);
+   memset(event_filename, 0, PV_MAX_INPUT_STR);
+   memset(sensor_id, 0, 100);
+   memset(timestr, 0, 100);
 
    /*
       Read the first message from the sensor, extract the sensor ID from the message
@@ -75,16 +80,17 @@ void *sensor_connection_handler(void *socket_desc)
    if ((read_size = recv(sock, sensor_message, PV_MAX_INPUT_STR, 0)) > 0)
    {
 
+      get_sensor_id(sensor_message, sensor_id);
+      strncpy(event_filename, sensor_id, strlen(sensor_id));
       tlen = get_time_string(timestr, 100);
 
-      if (tlen > 0) /* Build the default event filename, SID0000-YYYYMMDD-HHMMSS.fle */
+      if (tlen > 0) /* Build the default event log filename, SENSOR0000-YYYYMMDD-HHMMSS.fle */
       {
-         TODO:
-         strncpy(event_filename, EVENT_FILE, strlen(EVENT_FILE));
          strncat(event_filename, timestr, tlen);
       }
       else
       {
+         strncat(event_filename, "-YYYYMMDD-HHMMSS", 16);
          print_log_entry("sensor_connection_handler() <WARNING> Invalid time string.\n");
       }
       strncat(event_filename, EVENT_FILE_EXT, 4);
@@ -92,9 +98,12 @@ void *sensor_connection_handler(void *socket_desc)
       sensor_log = open_sensor_log_file(event_filename);
       if (sensor_log == NULL)
       {
-         TODO:
+         print_log_entry("sensor_connection_handler() <ERROR> Could not open sensor log file.\n");
+         return(NULL);
       }
-
+      /* TODO: update statistics hashmap */
+      write_project_header(sensor_log, "Pivotal Sensor Log");
+      write_sensor_log_record(sensor_log, sensor_message);
    }
    else
    {
@@ -102,14 +111,14 @@ void *sensor_connection_handler(void *socket_desc)
       return(NULL);
    }
 
-
    /*
-      Start the receive loop, only exit receive error or sensor disconnect.
+      Start the receive loop, only exit receive on error or sensor disconnect.
    */
 
    while((read_size = recv(sock, sensor_message, PV_MAX_INPUT_STR, 0)) > 0 )
    {
-      write(sock, sensor_message ,strlen(sensor_message));
+      /* TODO: update connections statistics map */
+      write_sensor_log_record(sensor_log, sensor_message);
       memset(sensor_message, 0, PV_MAX_INPUT_STR);
    }
 
@@ -122,8 +131,34 @@ void *sensor_connection_handler(void *socket_desc)
       print_log_entry("sensor_connection_handler() <ERROR> Sensor receive failed.\n");
    }
 
+   close_sensor_log_file(sensor_log);
    free(socket_desc);
 
    return(NULL);
 }
 
+void get_sensor_id(char *msg, char *sid)
+{
+   char *ptr;
+
+   ptr = strstr(msg, "SENSOR");
+
+   /*
+      Each message from a sensor contains an ID field with the following format:
+      <id>SENSORXXXX</id>
+      Were XXXX is a user specified 4 digit number. Each sensor id should be
+      unique to assist in forensic backtracking and prevent confusion of the
+      message sources and log files.
+   */
+
+   if (ptr != NULL)
+   {
+      strncpy(sid, ptr, 10);
+   }
+   else
+   {
+      strncpy(sid, "SENSORXXXX", 10); /* Unknown sensor ID. */
+   }
+
+   return;
+}

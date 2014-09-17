@@ -58,7 +58,7 @@ FILE *open_sensor_log_file(char *evt_file_name)
        printf("open_sensor_log_file() <ERROR>: could not open event file: %s\n", evt_file_name);
        return(NULL);
     }
-    printf("open_sensor_log_file() <INFO> open_fineline_event_file(): %s\n", evt_file_name);
+    printf("open_sensor_log_file() <INFO> Opened event log file %s\n", evt_file_name);
 
    return(evt_file);
 }
@@ -69,13 +69,12 @@ FILE *open_sensor_log_file(char *evt_file_name)
 
    Purpose : Creates an event string and writes to the log file.
            :
-   Input   : Event data string.
+   Input   : File pointer, Event data string.
    Output  : Timestamped event record.
 */
 int write_sensor_log_record(FILE *evt_file, char *estr)
 {
-
-   if (fputs (event_string, evt_file) < 0)
+   if (fputs (estr, evt_file) < 0)
    {
       print_log_entry("close_fineline_event_file() <ERROR> File write error.\n");
       return(-1);
@@ -86,9 +85,9 @@ int write_sensor_log_record(FILE *evt_file, char *estr)
 /*
    Function: write_project_header()
 
-   Purpose : Creates an event file header string and writes to the event file.
+   Purpose : Creates an event file project header string and writes to the event file.
            :
-   Input   : Project description string.
+   Input   : File pointer, project description string.
    Output  : Timestamped log header entry.
 */
 int write_project_header(FILE *evt_file, char *pstr)
@@ -104,7 +103,7 @@ int write_project_header(FILE *evt_file, char *pstr)
    loctime = localtime (&curtime);
    time_str = asctime(loctime);
 
-   strcpy(hdr, "<project><name>FineLine Project ");
+   strcpy(hdr, "<project><name>Pivotal Project ");
    strncat(hdr, time_str, strlen(time_str) - 1);
    strcat(hdr, "</name><investigator>NONE</investigator><summary>NONE</summary><startdate>NONE</startdate><enddate>NONE</enddate><description>");
    strncat(hdr, pstr, slen);

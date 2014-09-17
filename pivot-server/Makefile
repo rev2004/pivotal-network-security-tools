@@ -19,9 +19,9 @@ SOURCES=pivot-server.c \
 pvconnection.c \
 ../common/pvlog.c \
 ../common/pvutil.c \
-../common/pveventfile.c \
+../common/pveventlog.c \
 ../common/pvsocket.c \
-../common/pvipmap.c
+../common/pvconnectionmap.c
 
 # Objects
 
