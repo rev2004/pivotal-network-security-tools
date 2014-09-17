@@ -205,8 +205,16 @@ void delete_all_ips();
 pv_ip_record_t *get_first_ip_record();
 pv_ip_record_t *get_last_ip_record();
 
+/* pvconnectionmap.c */
 
-
+void add_connection_ip(pv_ip_record_t *ip_map, pv_ip_record_t *flip);
+pv_ip_record_t *find_connection_ip(pv_ip_record_t *ip_map, char *lookup_string);
+pv_ip_record_t *get_last_connection_record(pv_ip_record_t *ip_map);
+void delete_connection(pv_ip_record_t *ip_map, pv_ip_record_t *ip_record);
+void delete_all_connections(pv_ip_record_t *ip_map);
+void write_connection_map(pv_ip_record_t *ip_map, FILE *outfile);
+void send_connection_map(pv_ip_record_t *ip_map, int sock_desc);
+void print_connnection_map(pv_ip_record_t *ip_map);
 
 #endif
 

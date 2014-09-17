@@ -83,7 +83,8 @@ int write_fineline_event_record(char *estr)
    time_str = asctime(loctime);
    rtrim(time_str);
 
-   strcpy(event_string, "<event><id>PVSENSOR</id><evidencenumber>NONE</evidencenumber><time>");
+   /* TODO: add the actual sensor ID number in the id field. */
+   strcpy(event_string, "<event><id>SENSOR0000</id><evidencenumber>NONE</evidencenumber><time>");
    strcat(event_string, time_str);
    strcat(event_string, "</time><type>1</type><summary>Pivot Sensor Packet Event</summary><data>");
    strncat(event_string, estr, strlen(estr));
