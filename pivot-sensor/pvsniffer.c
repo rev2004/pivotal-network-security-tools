@@ -287,7 +287,10 @@ void terminate_capture(int signal_number)
    }
 
    if (options & PV_SERVER_OUT)
+   {
+      send_event(socket_desc, "<control>disconnect</control>"); /* Tell server we are disconnecting. */
       close_socket(socket_desc);
+   }
 
    print_ip_map();
 
