@@ -51,8 +51,6 @@ char source_file[20] = "pivot-server.c";
 
 int main(int argc, char *argv[])
 {
-   char event_file[PV_MAX_INPUT_STR];
-   int mode;
    int res = open_log_file(argv[0]);
 
    if (res < 0)
@@ -60,18 +58,9 @@ int main(int argc, char *argv[])
       printf("pivot-server.c main() <ERROR> Could not open log file.\n");
       exit(FILE_ERROR);
    }
-   print_log_entry("pivot-server.c main() <INFO> Starting Pivotal Sensor 1.0\n");
+   print_log_entry("pivot-server.c main() <INFO> Starting Pivotal Server 1.0\n");
 
-   mode = parse_command_line_args(argc, argv, event_file);
-   if (mode > 0)
-   {
-      init_server_socket(PV_SERVER_PORT, sensor_connection_handler);
-   }
-   else
-   {
-      print_log_entry("pivot-server.c main() <ERROR> Invalid command line options!\n");
-      show_server_help();
-   }
+   init_server_socket(PV_SERVER_PORT, sensor_connection_handler);
 
    close_log_file();
 

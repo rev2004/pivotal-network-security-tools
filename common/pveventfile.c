@@ -168,7 +168,8 @@ int create_event_record(char *event_string, char *data_string)
    time_str = asctime(loctime);
    rtrim(time_str);
 
-   strcpy(event_string, "<event><id>PVSENSOR</id><evidencenumber>NONE</evidencenumber><time>");
+   /* TODO: put an actual sensor id in the id field. */
+   strcpy(event_string, "<event><id>SENSOR0000</id><evidencenumber>NONE</evidencenumber><time>");
    strcat(event_string, time_str);
    strcat(event_string, "</time><type>1</type><summary>Pivot Sensor Packet Event</summary><data>");
    strncat(event_string, data_string, strlen(data_string));

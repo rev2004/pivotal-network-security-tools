@@ -57,6 +57,7 @@ void *sensor_connection_handler(void *socket_desc)
    char sensor_message[PV_MAX_INPUT_STR];
    char event_filename[PV_MAX_INPUT_STR];
    FILE *sensor_log;
+   /* TODO: pv_ip_record_t *connection_map = NULL;  the hash map head record */
 
    print_log_entry("sensor_connection_handler() <INFO> Connection handler starting.\n");
 
@@ -117,19 +118,20 @@ void *sensor_connection_handler(void *socket_desc)
 
    while((read_size = recv(sock, sensor_message, PV_MAX_INPUT_STR, 0)) > 0 )
    {
-      /* TODO: update connections statistics map */
-      write_sensor_log_record(sensor_log, sensor_message);
-      memset(sensor_message, 0, PV_MAX_INPUT_STR);
+      if (strncmp(sensor_message, "<event>", 7) == 0)
+      {
+         /* TODO: update connections statistics map */
+         write_sensor_log_record(sensor_log, sensor_message);
+         memset(sensor_message, 0, PV_MAX_INPUT_STR);
+      }
+      else /* We have a control message from the sensor. */
+      {
+         /* TODO: check for disconnect, alarm or error message. */
+         break;
+      }
    }
 
-   if(read_size == 0)
-   {
-      print_log_entry("sensor_connection_handler() <INFO> Sensor disconnected.\n");
-   }
-   else if(read_size == -1)
-   {
-      print_log_entry("sensor_connection_handler() <ERROR> Sensor receive failed.\n");
-   }
+   print_log_entry("sensor_connection_handler() <INFO> Sensor disconnected.\n");
 
    close_sensor_log_file(sensor_log);
    free(socket_desc);
